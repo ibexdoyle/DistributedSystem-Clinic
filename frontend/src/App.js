@@ -20,10 +20,11 @@ import News from './pages/News';
 import Contact from './pages/Contact';
 import EmergencyDepartment from './pages/EmergencyDepartment';
 import Profile from './pages/Profile';
-import AdminLayout from './pages/admin/Layout';
-import AdminDashboard from './pages/admin/Dashboard';
-import AdminUsers from './pages/admin/Users';
-import AdminPatients from './pages/admin/Patients';
+import Admin from './pages/admin';
+// import AdminLayout from './pages/admin/Layout';
+// import AdminDashboard from './pages/admin/Dashboard';
+// import AdminUsers from './pages/admin/Users';
+// import AdminPatients from './pages/admin/Patients';
 
 // Protected Route component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -112,17 +113,11 @@ function MainContent() {
           } />
           
           {/* Admin Routes */}
-          <Route path="/admin" element={
+          <Route path="/admin/*" element={
             <ProtectedRoute adminOnly>
-              <AdminLayout />
+              <Admin />
             </ProtectedRoute>
-          }>
-            <Route index element={<AdminDashboard />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="patients" element={<AdminPatients />} />
-            <Route path="appointments" element={<Appointments />} />
-            <Route path="prescriptions" element={<Prescriptions />} />
-          </Route>
+          } />
           
           {/* Redirect all other paths to home */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -51,7 +51,14 @@ const patients = [
   createPatientData(5, 'Hoàng Văn E', 'Nam', 50, '0918765432', 'hoangvane@example.com', '654 Đường KLM, Quận Tân Bình, TP.HCM', '2023-05-10', 'inactive'),
 ];
 
-const statuses = ['Tất cả', 'Đang điều trị', 'Đã khỏi bệnh', 'Chờ xác nhận'];
+const statusMap = {
+  'Tất cả': '',
+  'Đang điều trị': 'active',
+  'Đã khỏi bệnh': 'inactive',
+  'Chờ xác nhận': 'pending'
+};
+
+const statuses = Object.keys(statusMap);
 
 const Patients = () => {
   const [page, setPage] = useState(0);
@@ -104,7 +111,8 @@ const Patients = () => {
     const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        patient.phone.includes(searchTerm) ||
                        (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = selectedStatus === 'Tất cả' || patient.status === selectedStatus.toLowerCase();
+    const statusValue = statusMap[selectedStatus];
+    const matchesStatus = selectedStatus === 'Tất cả' || patient.status === statusValue;
     return matchesSearch && matchesStatus;
   });
 
@@ -191,7 +199,24 @@ const Patients = () => {
         </Box>
       </Paper>
 
-      <TableContainer component={Paper}>
+      <TableContainer 
+        component={Paper} 
+        sx={{ 
+          maxHeight: '70vh',
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#888',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: '#f1f1f1'
+          }
+        }}
+      >
         <Table>
           <TableHead>
             <TableRow>

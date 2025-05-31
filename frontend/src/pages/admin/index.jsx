@@ -2,8 +2,9 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import Patients from './Patients';
-import Appointments from '../Appointments';
-import Prescriptions from './Prescriptions';
+import Appointments from './Appointments';
+// Import từ thư mục gốc vì file Prescriptions nằm ở đó
+import Prescriptions from '../Prescriptions';
 import Users from './Users';
 import Layout from './Layout';
 
