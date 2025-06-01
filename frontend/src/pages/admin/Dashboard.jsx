@@ -1,27 +1,15 @@
 import React, { useState } from "react";
-import {
-    Box,
-    Typography,
-    Avatar,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TablePagination,
+import { Container, Row, Col, Card, Button, ButtonGroup } from 'react-bootstrap';
+import { 
+    Box, 
+    Typography, 
+    Paper, 
+    useTheme,
     IconButton,
-    Chip,
-    Stack,
-    Menu,
-    MenuItem,
-    Tooltip,
-    Paper,
-    Card,
     CardContent,
-    Button,
-    Grid
+    Chip
 } from "@mui/material";
+import 'bootstrap/dist/css/bootstrap.min.css';
 import {
     ResponsiveContainer,
     LineChart,
@@ -39,9 +27,9 @@ import {
 } from "recharts";
 import {
     People as PeopleIcon,
-    LocalHospital as HospitalIcon,
-    EventNote as EventNoteIcon,
-    AttachMoney as MoneyIcon,
+    LocalHospital as LocalHospitalIcon,
+    EventAvailable as EventAvailableIcon,
+    MonetizationOn as MonetizationOnIcon,
     Print as PrintIcon,
     Share as ShareIcon,
     Person as PersonIcon,
@@ -122,7 +110,7 @@ const Dashboard = () => {
             value: "2,420",
             change: 12.5,
             isIncrease: true,
-            icon: PeopleIcon,
+            icon: PersonIcon,
             color: "primary"
         },
         {
@@ -130,7 +118,7 @@ const Dashboard = () => {
             value: "156",
             change: 5.2,
             isIncrease: true,
-            icon: HospitalIcon,
+            icon: LocalHospitalIcon,
             color: "secondary"
         },
         {
@@ -138,7 +126,7 @@ const Dashboard = () => {
             value: "1,234",
             change: -2.1,
             isIncrease: false,
-            icon: EventNoteIcon,
+            icon: EventAvailableIcon,
             color: "warning"
         },
         {
@@ -146,7 +134,7 @@ const Dashboard = () => {
             value: "45,250,000",
             change: 18.3,
             isIncrease: true,
-            icon: MoneyIcon,
+            icon: MonetizationOnIcon,
             color: "success",
             isMoney: true
         }
@@ -191,6 +179,22 @@ const Dashboard = () => {
         { name: "Thg 10", revenue: 42300000 },
         { name: "Thg 11", revenue: 46500000 },
         { name: "Thg 12", revenue: 52000000 }
+    ];
+
+    // Dữ liệu biểu đồ: Số lượng đơn thuốc đã cấp
+    const prescriptionData = [
+        { name: "Thg 1", prescriptions: 1024 },
+        { name: "Thg 2", prescriptions: 980 },
+        { name: "Thg 3", prescriptions: 1250 },
+        { name: "Thg 4", prescriptions: 1120 },
+        { name: "Thg 5", prescriptions: 1340 },
+        { name: "Thg 6", prescriptions: 1450 },
+        { name: "Thg 7", prescriptions: 1180 },
+        { name: "Thg 8", prescriptions: 1560 },
+        { name: "Thg 9", prescriptions: 1480 },
+        { name: "Thg 10", prescriptions: 1320 },
+        { name: "Thg 11", prescriptions: 1420 },
+        { name: "Thg 12", prescriptions: 1650 }
     ];
 
     // Custom tooltip cho biểu đồ
@@ -245,142 +249,228 @@ const Dashboard = () => {
     };
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Box sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 3
-            }}>
-                <Typography variant="h4" fontWeight="bold">
-                    Tổng quan
-                </Typography>
-                <Box sx={{ display: "flex", gap: 2 }}>
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<PrintIcon fontSize="small" />}
-                    >
-                        In báo cáo
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<ShareIcon fontSize="small" />}
-                    >
-                        Chia sẻ
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<RefreshIcon fontSize="small" />}
-                        onClick={() => window.location.reload()}
-                    >
-                        Làm mới
-                    </Button>
-                </Box>
-            </Box>
+        <Container fluid className="py-4">
+            {/* Header */}
+            <Row className="mb-4 align-items-center">
+                <Col xs={12} md={6}>
+                    <h2 className="mb-0 fw-bold">Tổng quan</h2>
+                </Col>
+                <Col xs={12} md={6} className="mt-3 mt-md-0 d-flex justify-content-md-end">
+                    <ButtonGroup>
+                        <Button variant="outline-secondary" size="sm" onClick={() => window.location.reload()}>
+                            <RefreshIcon fontSize="small" className="me-1" /> Làm mới
+                        </Button>
+                        <Button variant="outline-secondary" size="sm">
+                            <PrintIcon fontSize="small" className="me-1" /> In báo cáo
+                        </Button>
+                        <Button variant="outline-secondary" size="sm">
+                            <ShareIcon fontSize="small" className="me-1" /> Chia sẻ
+                        </Button>
+                    </ButtonGroup>
+                </Col>
+            </Row>
 
-            {/* Thống kê nhanh */}
-            <Grid container spacing={3}>
+            {/* Stat Cards */}
+            <Row className="mb-4 g-3">
                 {stats.map((stat, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
-                        <StatCard {...stat} />
-                    </Grid>
+                    <Col key={index} xs={12} sm={6} lg={3}>
+                        <Card className="h-100 shadow-sm border-0 rounded-3">
+                            <Card.Body>
+                                <div className="d-flex align-items-center">
+                                    <div className="p-3 rounded-3 me-3" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)' }}>
+                                        <PeopleIcon style={{ color: '#6366F1', fontSize: '1.5rem' }} />
+                                    </div>
+                                    <div>
+                                        <p className="text-muted mb-1">{stat.title}</p>
+                                        <h4 className="mb-0 fw-bold">
+                                            {stat.isMoney ? `${parseInt(stat.value).toLocaleString()} VNĐ` : stat.value}
+                                        </h4>
+                                    </div>
+                                </div>
+                                <div className="mt-2">
+                                    <span className={`badge bg-${stat.isIncrease ? 'success' : 'danger'}-subtle text-${stat.isIncrease ? 'success' : 'danger'} p-1`}>
+                                        {stat.isIncrease ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />}
+                                        {stat.change}% so với tháng trước
+                                    </span>
+                                </div>
+                            </Card.Body>
+                        </Card>
+                    </Col>
                 ))}
-            </Grid>
+            </Row>
 
-            {/* Biểu đồ 1 và 2: Bệnh nhân và Dịch vụ */}
-            <Grid container spacing={3} sx={{ mt: 2 }}>
-                {/* Biểu đồ 1: Số lượng bệnh nhân theo tháng */}
-                <Grid item xs={12} md={8}>
-                    <Card sx={{ p: 3, height: '100%' }}>
-                        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-                            Số lượng bệnh nhân theo tháng
-                        </Typography>
-                        <Box sx={{ height: 400, mt: 3 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={patientData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <RechartsTooltip content={<CustomTooltip />} />
-                                    <Bar 
-                                        dataKey="patients" 
-                                        fill="#8884d8" 
-                                        name="Số bệnh nhân"
-                                        radius={[4, 4, 0, 0]}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </Box>
+            {/* Chart Row 1 */}
+            <Row className="mb-4 g-3">
+                {/* Patient Chart */}
+                <Col xs={12} lg={8}>
+                    <Card className="h-100 shadow-sm border-0 rounded-3">
+                        <Card.Body>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h5 className="mb-0 fw-bold">Số lượng bệnh nhân theo tháng</h5>
+                                <ButtonGroup size="sm">
+                                    <Button variant="outline-secondary">Tháng</Button>
+                                    <Button variant="outline-secondary">Quý</Button>
+                                    <Button variant="outline-secondary">Năm</Button>
+                                </ButtonGroup>
+                            </div>
+                            <div style={{ height: '350px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={patientData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                                        <YAxis axisLine={false} tickLine={false} />
+                                        <RechartsTooltip content={<CustomTooltip />} />
+                                        <Bar 
+                                            dataKey="patients" 
+                                            fill="#6366F1" 
+                                            name="Số bệnh nhân"
+                                            radius={[4, 4, 0, 0]}
+                                        />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </Card.Body>
                     </Card>
-                </Grid>
+                </Col>
                 
-                {/* Biểu đồ 2: Tỷ lệ các dịch vụ khám */}
-                <Grid item xs={12} md={4}>
-                    <Card sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-                            Tỷ lệ các dịch vụ khám
-                        </Typography>
-                        <Box sx={{ flex: 1, mt: 2, minHeight: 400 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={serviceData}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={renderCustomizedLabel}
-                                        outerRadius={120}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                        nameKey="name"
-                                    >
-                                        {serviceData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Legend />
-                                    <RechartsTooltip formatter={(value, name) => [`${value}%`, name]} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </Box>
+                {/* Service Distribution */}
+                <Col xs={12} lg={4}>
+                    <Card className="h-100 shadow-sm border-0 rounded-3">
+                        <Card.Body className="d-flex flex-column">
+                            <h5 className="mb-3 fw-bold">Tỷ lệ các dịch vụ khám</h5>
+                            <div style={{ flex: 1, minHeight: '300px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={serviceData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={renderCustomizedLabel}
+                                            outerRadius={100}
+                                            innerRadius={60}
+                                            dataKey="value"
+                                            nameKey="name"
+                                        >
+                                            {serviceData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip content={<CustomTooltip />} />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </Card.Body>
                     </Card>
-                </Grid>
-            </Grid>
+                </Col>
+            </Row>
 
-            {/* Biểu đồ 3: Doanh thu theo tháng */}
-            <Grid container spacing={3} sx={{ mt: 2 }}>
-                <Grid item xs={12}>
-                    <Card sx={{ p: 3 }}>
-                        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-                            Doanh thu theo tháng (VNĐ)
-                        </Typography>
-                        <Box sx={{ height: 450, mt: 3 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={revenueData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} />
-                                    <RechartsTooltip formatter={(value) => [`${parseInt(value).toLocaleString()} VNĐ`, 'Doanh thu']} />
-                                    <Legend />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="revenue"
-                                        name="Doanh thu"
-                                        stroke="#8884d8"
-                                        strokeWidth={2}
-                                        dot={{ r: 4 }}
-                                        activeDot={{ r: 6 }}
-                                    />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </Box>
+            {/* Revenue Chart */}
+            <Row className="mb-4">
+                <Col xs={12}>
+                    <Card className="shadow-sm border-0 rounded-3">
+                        <Card.Body>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h5 className="mb-0 fw-bold">Doanh thu theo tháng (VNĐ)</h5>
+                                <div className="d-flex">
+                                    <ButtonGroup size="sm" className="me-2">
+                                        <Button variant="outline-secondary">2024</Button>
+                                        <Button variant="outline-secondary">2023</Button>
+                                    </ButtonGroup>
+                                    <ButtonGroup size="sm">
+                                        <Button variant="outline-secondary">Xuất Excel</Button>
+                                    </ButtonGroup>
+                                </div>
+                            </div>
+                            <div style={{ height: '400px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={revenueData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                                        <YAxis 
+                                            axisLine={false} 
+                                            tickLine={false} 
+                                            tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} 
+                                        />
+                                        <RechartsTooltip 
+                                            formatter={(value) => [`${parseInt(value).toLocaleString()} VNĐ`, 'Doanh thu']}
+                                            contentStyle={{
+                                                borderRadius: '8px',
+                                                border: 'none',
+                                                boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                                            }}
+                                        />
+                                        <Legend />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="revenue"
+                                            name="Doanh thu"
+                                            stroke="#6366F1"
+                                            strokeWidth={2}
+                                            dot={{ r: 4 }}
+                                            activeDot={{ r: 6, stroke: '#6366F1', strokeWidth: 2 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </Card.Body>
                     </Card>
-                </Grid>
-            </Grid>
-        </Box>
+                </Col>
+            </Row>
+
+            {/* Prescription Chart */}
+            <Row className="mb-4">
+                <Col xs={12}>
+                    <Card className="shadow-sm border-0 rounded-3">
+                        <Card.Body>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h5 className="mb-0 fw-bold">Số lượng đơn thuốc đã cấp</h5>
+                                <div className="d-flex">
+                                    <ButtonGroup size="sm" className="me-2">
+                                        <Button variant="outline-secondary">2024</Button>
+                                        <Button variant="outline-secondary">2023</Button>
+                                    </ButtonGroup>
+                                    <ButtonGroup size="sm">
+                                        <Button variant="outline-secondary">Xuất Excel</Button>
+                                    </ButtonGroup>
+                                </div>
+                            </div>
+                            <div style={{ height: '350px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={prescriptionData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                                        <YAxis 
+                                            axisLine={false} 
+                                            tickLine={false}
+                                        />
+                                        <RechartsTooltip 
+                                            formatter={(value) => [`${value} đơn`, 'Số đơn thuốc']}
+                                            contentStyle={{
+                                                borderRadius: '8px',
+                                                border: 'none',
+                                                boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                                            }}
+                                        />
+                                        <Legend />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="prescriptions"
+                                            name="Số đơn thuốc"
+                                            stroke="#10B981"
+                                            strokeWidth={2}
+                                            dot={{ r: 4 }}
+                                            activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
     );
 };
 

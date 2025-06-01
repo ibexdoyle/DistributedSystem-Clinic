@@ -33,6 +33,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 
+import logoVinmec from "../../assets/logoVinmec.svg"; 
+
 const drawerWidth = 240;
 
 const menuItems = [
@@ -70,11 +72,12 @@ const Layout = ({ children }) => {
 
   const drawer = (
     <div>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-        <Typography variant="h6" noWrap component="div">
-          Bệnh Viện Quốc tế Vinmec Phú Quốc
-        </Typography>
-      </Toolbar>
+      <Toolbar sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center', p: 2 }}>
+  <Box component="img" src={logoVinmec} alt="Vinmec Logo" sx={{ height: 40 }} />
+  {/* <Typography variant="h6" noWrap component="div">
+    Vinmec Phú Quốc
+  </Typography> */}
+</Toolbar>
       <Divider />
       <List>
         {menuItems.map((item) => (

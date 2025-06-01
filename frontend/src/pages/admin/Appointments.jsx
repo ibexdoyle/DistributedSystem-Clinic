@@ -23,10 +23,15 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import vi from 'date-fns/locale/vi';
+import CalendarView from '../../components/appointment/CalendarView';
 import SearchIcon from '@mui/icons-material/Search';
+import ChevronLeft from '@mui/icons-material/ChevronLeft';
+import ChevronRight from '@mui/icons-material/ChevronRight';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import AppointmentActions from '../../components/appointment/AppointmentActions';
 
 // Dữ liệu mẫu
 const sampleAppointments = [
@@ -88,6 +93,11 @@ const Appointments = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDateAppointments, setShowDateAppointments] = useState(true);
 
   // Load dữ liệu mẫu khi component mount
   useEffect(() => {
@@ -113,8 +123,18 @@ const Appointments = () => {
 
   // Lọc lịch hẹn
   const filteredAppointments = appointments.filter(appointment => {
-    const matchesDate = !filterDate || 
-      format(parseISO(appointment.date), 'yyyy-MM-dd') === format(filterDate, 'yyyy-MM-dd');
+    const appointmentDate = parseISO(appointment.date);
+    
+    // Lọc theo ngày được chọn
+    if (selectedDate && !isSameDay(appointmentDate, selectedDate)) {
+      return false;
+    }
+    // Nếu có bộ lọc ngày
+    else if (filterDate) {
+      if (format(appointmentDate, 'yyyy-MM-dd') !== format(filterDate, 'yyyy-MM-dd')) {
+        return false;
+      }
+    }
     
     const matchesStatus = filterStatus === 'all' || appointment.status === filterStatus;
     
@@ -123,14 +143,48 @@ const Appointments = () => {
       appointment.phone.includes(searchTerm) ||
       appointment.doctor.toLowerCase().includes(searchTerm.toLowerCase());
     
-    return matchesDate && matchesStatus && matchesSearch;
+    return matchesStatus && matchesSearch;
   });
+
+  // Xử lý chọn ngày
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+  };
+
+  // Chuyển đến ngày hôm trước
+  const handlePreviousDay = () => {
+    const prevDay = new Date(selectedDate);
+    prevDay.setDate(prevDay.getDate() - 1);
+    setSelectedDate(prevDay);
+  };
+
+  // Chuyển đến ngày hôm sau
+  const handleNextDay = () => {
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    setSelectedDate(nextDay);
+  };
+
+  // Chuyển về hôm nay
+  const handleToday = () => {
+    const today = new Date();
+    setSelectedDate(today);
+  };
+
+  // Quay lại xem lịch
+  const handleBackToCalendar = () => {
+    setShowDateAppointments(false);
+    setSelectedDate(null);
+    setFilterDate(null);
+  };
 
   // Làm mới bộ lọc
   const handleResetFilters = () => {
     setFilterDate(null);
     setFilterStatus('all');
     setSearchTerm('');
+    setShowDateAppointments(false);
+    setSelectedDate(null);
   };
 
   // Cập nhật trạng thái lịch hẹn
@@ -138,6 +192,31 @@ const Appointments = () => {
     setAppointments(appointments.map(appt => 
       appt.id === id ? { ...appt, status: newStatus } : appt
     ));
+    setIsActionsOpen(false);
+  };
+
+  // Cập nhật thông tin lịch hẹn
+  const handleEditAppointment = (id, updatedData) => {
+    setAppointments(appointments.map(appt => 
+      appt.id === id ? { 
+        ...appt, 
+        ...updatedData,
+        date: updatedData.date.toISOString() 
+      } : appt
+    ));
+    setIsActionsOpen(false);
+  };
+
+  // Mở hộp thoại chi tiết lịch hẹn
+  const handleAppointmentClick = (appointment) => {
+    setSelectedAppointment(appointment);
+    setIsActionsOpen(true);
+  };
+
+  // Đóng hộp thoại chi tiết lịch hẹn
+  const handleCloseActions = () => {
+    setIsActionsOpen(false);
+    setSelectedAppointment(null);
   };
 
   // Định dạng ngày giờ
@@ -145,11 +224,106 @@ const Appointments = () => {
     return format(parseISO(dateTimeString), 'HH:mm dd/MM/yyyy', { locale: vi });
   };
 
+  // Thống kê
+  const stats = [
+    { 
+      title: 'Tổng số lịch hẹn', 
+      value: appointments.length,
+      color: 'primary.main',
+      icon: '📅'
+    },
+    { 
+      title: 'Đã xác nhận', 
+      value: appointments.filter(a => a.status === 'confirmed').length,
+      color: 'success.main',
+      icon: '✅'
+    },
+    { 
+      title: 'Chờ xác nhận', 
+      value: appointments.filter(a => a.status === 'pending').length,
+      color: 'warning.main',
+      icon: '⏳'
+    },
+    { 
+      title: 'Đã hủy', 
+      value: appointments.filter(a => a.status === 'cancelled').length,
+      color: 'error.main',
+      icon: '❌'
+    }
+  ];
+
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 'bold' }}>
-        Quản lý Lịch hẹn
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+          Lịch hẹn ngày {format(selectedDate, 'dd/MM/yyyy')}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button 
+            variant="outlined" 
+            onClick={handleToday}
+            size="small"
+          >
+            Hôm nay
+          </Button>
+          <IconButton 
+            onClick={handlePreviousDay}
+            size="small"
+            sx={{ border: '1px solid', borderColor: 'divider' }}
+          >
+            <ChevronLeft />
+          </IconButton>
+          <IconButton 
+            onClick={handleNextDay}
+            size="small"
+            sx={{ border: '1px solid', borderColor: 'divider' }}
+          >
+            <ChevronRight />
+          </IconButton>
+        </Box>
+      </Box>
+
+      {/* Thống kê */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {stats.map((stat, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index}>
+            <Paper 
+              sx={{ 
+                p: 2, 
+                display: 'flex', 
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                height: '100%',
+                borderLeft: `4px solid ${stat.color}`,
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+              }}
+            >
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5 }}>
+                  {stat.title}
+                </Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: stat.color }}>
+                  {stat.value}
+                </Typography>
+              </Box>
+              <Box 
+                sx={{ 
+                  width: 48, 
+                  height: 48, 
+                  borderRadius: '50%', 
+                  bgcolor: `${stat.color}15`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 24
+                }}
+              >
+                {stat.icon}
+              </Box>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
 
       {/* Bộ lọc */}
       <Paper sx={{ p: 2, mb: 3, overflow: 'hidden' }}>
@@ -271,11 +445,22 @@ const Appointments = () => {
                   Đang tải dữ liệu...
                 </TableCell>
               </TableRow>
-            ) : filteredAppointments.length > 0 ? (
+            ) : filteredAppointments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  Không tìm thấy lịch hẹn nào
+                </TableCell>
+              </TableRow>
+            ) : (
               filteredAppointments
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((appointment) => (
-                  <TableRow key={appointment.id}>
+                  <TableRow 
+                    key={appointment.id}
+                    hover
+                    onClick={() => handleAppointmentClick(appointment)}
+                    sx={{ cursor: 'pointer' }}
+                  >
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>#{appointment.id.toString().padStart(4, '0')}</TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>{appointment.patientName}</TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>{appointment.phone}</TableCell>
@@ -295,47 +480,19 @@ const Appointments = () => {
                       {appointment.note || '-'}
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        {appointment.status === 'pending' && (
-                          <>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              color="primary"
-                              onClick={() => updateAppointmentStatus(appointment.id, 'confirmed')}
-                            >
-                              Xác nhận
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              color="error"
-                              onClick={() => updateAppointmentStatus(appointment.id, 'cancelled')}
-                            >
-                              Hủy
-                            </Button>
-                          </>
-                        )}
-                        {appointment.status === 'confirmed' && (
-                          <Button
-                            variant="contained"
-                            size="small"
-                            color="success"
-                            onClick={() => updateAppointmentStatus(appointment.id, 'completed')}
-                          >
-                            Hoàn thành
-                          </Button>
-                        )}
-                      </Box>
+                      <Button 
+                        variant="outlined" 
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAppointmentClick(appointment);
+                        }}
+                      >
+                        Chi tiết
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
-                  Không tìm thấy lịch hẹn nào
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
@@ -353,7 +510,18 @@ const Appointments = () => {
             `${from}-${to} trong tổng số ${count}`
           }
         />
-      </TableContainer>
+          </TableContainer>
+
+      {/* Hộp thoại chi tiết lịch hẹn */}
+      {selectedAppointment && (
+        <AppointmentActions
+          open={isActionsOpen}
+          onClose={handleCloseActions}
+          appointment={selectedAppointment}
+          onStatusChange={updateAppointmentStatus}
+          onEdit={handleEditAppointment}
+        />
+      )}
     </Box>
   );
 };

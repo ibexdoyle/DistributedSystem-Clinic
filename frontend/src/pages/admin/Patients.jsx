@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -16,13 +16,15 @@ import {
   Typography,
   Avatar,
   Chip,
-  Stack,
   Menu,
   MenuItem,
   ListItemIcon,
   ListItemText,
   Divider,
-  Badge,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  Stack,
   Tooltip
 } from '@mui/material';
 import {
@@ -32,24 +34,66 @@ import {
   Delete as DeleteIcon,
   PersonAdd as PersonAddIcon,
   FilterList as FilterListIcon,
-  LocalHospital as LocalHospitalIcon,
-  EventNote as EventNoteIcon,
   Phone as PhoneIcon,
-  Email as EmailIcon
+  Email as EmailIcon,
+  Visibility as VisibilityIcon,
+  LocalHospital as LocalHospitalIcon,
+  EventNote as EventNoteIcon
 } from '@mui/icons-material';
+import PatientForm from '../../components/patient/PatientForm';
+import PatientDetails from '../../components/patient/PatientDetails';
 
-// Dummy data - Thay thế bằng dữ liệu thực tế từ API
+// Dummy data - In a real app, this would come from an API
 const createPatientData = (id, name, gender, age, phone, email, address, lastVisit, status) => ({
-  id, name, gender, age, phone, email, address, lastVisit, status
+  id, 
+  name, 
+  gender, 
+  age, 
+  phone, 
+  email, 
+  address, 
+  lastVisit, 
+  status,
+  dob: '1990-01-01',
+  idCard: '00123456789',
+  insuranceNumber: 'BH12345678',
+  bloodType: 'A+',
+  allergy: 'Không có',
+  medicalHistory: 'Không có tiền sử bệnh'
 });
 
-const patients = [
-  createPatientData(1, 'Nguyễn Văn A', 'Nam', 35, '0987654321', 'nguyenvana@example.com', '123 Đường ABC, Quận 1, TP.HCM', '2023-05-20', 'active'),
-  createPatientData(2, 'Trần Thị B', 'Nữ', 28, '0912345678', 'tranthib@example.com', '456 Đường XYZ, Quận 3, TP.HCM', '2023-05-22', 'active'),
-  createPatientData(3, 'Lê Văn C', 'Nam', 45, '0905123456', 'levanc@example.com', '789 Đường DEF, Quận 5, TP.HCM', '2023-05-18', 'inactive'),
-  createPatientData(4, 'Phạm Thị D', 'Nữ', 32, '0978123456', 'phamthid@example.com', '321 Đường GHI, Quận 10, TP.HCM', '2023-05-15', 'active'),
-  createPatientData(5, 'Hoàng Văn E', 'Nam', 50, '0918765432', 'hoangvane@example.com', '654 Đường KLM, Quận Tân Bình, TP.HCM', '2023-05-10', 'inactive'),
-];
+// Mock API functions
+const fetchPatients = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        createPatientData(1, 'Nguyễn Văn A', 'Nam', 35, '0987654321', 'nguyenvana@example.com', '123 Đường ABC, Quận 1, TP.HCM', '2023-05-20', 'active'),
+        createPatientData(2, 'Trần Thị B', 'Nữ', 28, '0912345678', 'tranthib@example.com', '456 Đường XYZ, Quận 3, TP.HCM', '2023-05-22', 'active'),
+        createPatientData(3, 'Lê Văn C', 'Nam', 45, '0905123456', 'levanc@example.com', '789 Đường DEF, Quận 5, TP.HCM', '2023-05-18', 'inactive'),
+        createPatientData(4, 'Phạm Thị D', 'Nữ', 32, '0978123456', 'phamthid@example.com', '321 Đường GHI, Quận 10, TP.HCM', '2023-05-15', 'active'),
+        createPatientData(5, 'Hoàng Văn E', 'Nam', 50, '0918765432', 'hoangvane@example.com', '654 Đường KLM, Quận Tân Bình, TP.HCM', '2023-05-10', 'inactive'),
+      ]);
+    }, 500);
+  });
+};
+
+const savePatient = (patient) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log('Patient saved:', patient);
+      resolve({ ...patient, id: patient.id || Math.floor(Math.random() * 1000) });
+    }, 500);
+  });
+};
+
+const deletePatient = (id) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log('Patient deleted:', id);
+      resolve(true);
+    }, 500);
+  });
+};
 
 const statusMap = {
   'Tất cả': '',
@@ -65,9 +109,162 @@ const Patients = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedPatientId, setSelectedPatientId] = useState(null);
-  const [selectedStatus, setSelectedStatus] = useState('Tất cả');
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [anchorFilterEl, setAnchorFilterEl] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState('Tất cả');
+  const [editingPatient, setEditingPatient] = useState(null);
+  const [openForm, setOpenForm] = useState(false);
+  const [openDetails, setOpenDetails] = useState(false);
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - patients.length) : 0;
+
+  // Fetch patients on component mount
+  useEffect(() => {
+    const loadPatients = async () => {
+      try {
+        const data = await fetchPatients();
+        setPatients(data);
+      } catch (error) {
+        console.error('Error loading patients:', error);
+        showSnackbar('Lỗi khi tải danh sách bệnh nhân', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadPatients();
+  }, []);
+
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  const handleClick = (event, patient) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedPatient(patient);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+    setSelectedPatient(null);
+  };
+
+  const handleOpenForm = (patient = null) => {
+    setEditingPatient(patient);
+    setOpenForm(true);
+  };
+
+  const handleCloseForm = () => {
+    setOpenForm(false);
+    setEditingPatient(null);
+  };
+
+  const handleOpenDetails = (patient) => {
+    setSelectedPatient(patient);
+    setOpenDetails(true);
+  };
+
+  const handleCloseDetails = () => {
+    setOpenDetails(false);
+    setSelectedPatient(null);
+  };
+
+  const handleViewDetails = () => {
+    if (selectedPatient) {
+      handleOpenDetails(selectedPatient);
+      handleMenuClose();
+    }
+  };
+
+  const handleMenuOpen = (event, patientId) => {
+    const patient = patients.find(p => p.id === patientId);
+    setSelectedPatient(patient);
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleEditPatient = () => {
+    if (selectedPatient) {
+      handleOpenForm(selectedPatient);
+    }
+  };
+
+  const handleDeletePatient = () => {
+    if (selectedPatient) {
+      handleDelete();
+    }
+  };
+
+  const handleViewHistory = () => {
+    // Handle view history logic here
+    console.log('View history for patient:', selectedPatient);
+  };
+
+  const handleSubmitPatient = async (formData) => {
+    try {
+      const savedPatient = await savePatient(formData);
+      
+      if (formData.id) {
+        // Update existing patient
+        setPatients(patients.map(p => p.id === formData.id ? savedPatient : p));
+        showSnackbar('Cập nhật thông tin bệnh nhân thành công');
+      } else {
+        // Add new patient
+        setPatients([savedPatient, ...patients]);
+        showSnackbar('Thêm bệnh nhân mới thành công');
+      }
+      
+      setOpenForm(false);
+      setEditingPatient(null);
+    } catch (error) {
+      console.error('Error saving patient:', error);
+      showSnackbar('Đã xảy ra lỗi khi lưu thông tin bệnh nhân', 'error');
+    }
+  };
+
+  const handleSubmit = async (formData) => {
+    try {
+      const savedPatient = await savePatient(formData);
+      
+      if (formData.id) {
+        // Update existing patient
+        setPatients(patients.map(p => p.id === formData.id ? savedPatient : p));
+        showSnackbar('Cập nhật thông tin bệnh nhân thành công');
+      } else {
+        // Add new patient
+        setPatients([savedPatient, ...patients]);
+        showSnackbar('Thêm bệnh nhân mới thành công');
+      }
+      
+      handleCloseForm();
+    } catch (error) {
+      console.error('Error saving patient:', error);
+      showSnackbar('Đã xảy ra lỗi khi lưu thông tin bệnh nhân', 'error');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedPatient) return;
+    
+    try {
+      await deletePatient(selectedPatient.id);
+      setPatients(patients.filter(p => p.id !== selectedPatient.id));
+      showSnackbar('Đã xóa bệnh nhân thành công');
+      handleClose();
+    } catch (error) {
+      console.error('Error deleting patient:', error);
+      showSnackbar('Đã xảy ra lỗi khi xóa bệnh nhân', 'error');
+    }
+  };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -81,16 +278,6 @@ const Patients = () => {
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
     setPage(0);
-  };
-
-  const handleMenuOpen = (event, patientId) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedPatientId(patientId);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedPatientId(null);
   };
 
   const handleFilterClick = (event) => {
@@ -108,23 +295,27 @@ const Patients = () => {
   };
 
   const filteredPatients = patients.filter((patient) => {
-    const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       patient.phone.includes(searchTerm) ||
-                       (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()));
-    const statusValue = statusMap[selectedStatus];
-    const matchesStatus = selectedStatus === 'Tất cả' || patient.status === statusValue;
-    return matchesSearch && matchesStatus;
+    const matchesSearch = 
+      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.phone.includes(searchTerm) ||
+      patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (patient.idCard && patient.idCard.includes(searchTerm));
+    
+    if (selectedStatus === 'Tất cả') return matchesSearch;
+    return matchesSearch && patient.status === statusMap[selectedStatus];
   });
 
-  const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - filteredPatients.length) : 0;
+  const paginatedPatients = filteredPatients.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'active':
         return 'success';
       case 'inactive':
-        return 'error';
+        return 'default';
       default:
         return 'default';
     }
@@ -133,36 +324,38 @@ const Patients = () => {
   const getStatusText = (status) => {
     switch (status) {
       case 'active':
-        return 'Đang điều trị';
+        return 'Đang hoạt động';
       case 'inactive':
-        return 'Đã khỏi bệnh';
+        return 'Ngừng hoạt động';
       default:
-        return 'Chờ xác nhận';
+        return 'Không xác định';
     }
   };
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" fontWeight="bold">Quản lý bệnh nhân</Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
+      <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5" component="h1">
+          Quản lý Bệnh nhân
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
           startIcon={<PersonAddIcon />}
-          onClick={() => {}}
+          onClick={() => handleOpenForm()}
         >
           Thêm bệnh nhân
         </Button>
       </Box>
 
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      <Paper sx={{ mb: 3 }}>
+        <Box p={2} display="flex" alignItems="center">
           <TextField
-            size="small"
-            placeholder="Tìm kiếm bệnh nhân..."
+            fullWidth
             variant="outlined"
+            placeholder="Tìm kiếm bệnh nhân..."
             value={searchTerm}
-            onChange={handleSearch}
+            onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -170,34 +363,646 @@ const Patients = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ flex: 1, minWidth: 250 }}
           />
-          <Button
-            variant="outlined"
-            startIcon={<FilterListIcon />}
+          <IconButton
             onClick={handleFilterClick}
-            sx={{ ml: 'auto' }}
+            sx={{ ml: 1 }}
+            aria-label="filter"
           >
-            {selectedStatus}
-          </Button>
-          
-          <Menu
-            anchorEl={anchorFilterEl}
-            open={Boolean(anchorFilterEl)}
-            onClose={handleFilterClose}
-          >
-            {statuses.map((status) => (
-              <MenuItem 
-                key={status} 
-                onClick={() => handleStatusSelect(status)}
-                selected={status === selectedStatus}
-              >
-                {status}
-              </MenuItem>
-            ))}
-          </Menu>
+            <FilterListIcon />
+          </IconButton>
         </Box>
+
+        <Menu
+          anchorEl={anchorFilterEl}
+          open={Boolean(anchorFilterEl)}
+          onClose={handleFilterClose}
+        >
+          {statuses.map((status) => (
+            <MenuItem
+              key={status}
+              selected={selectedStatus === status}
+              onClick={() => handleStatusSelect(status)}
+            >
+              {status}
+            </MenuItem>
+          ))}
+        </Menu>
       </Paper>
+
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Họ tên</TableCell>
+              <TableCell>Giới tính</TableCell>
+              <TableCell>Tuổi</TableCell>
+              <TableCell>Số điện thoại</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Địa chỉ</TableCell>
+              <TableCell>Lần khám gần nhất</TableCell>
+              <TableCell>Trạng thái</TableCell>
+              <TableCell align="right">Thao tác</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <CircularProgress />
+                </TableCell>
+              </TableRow>
+            ) : paginatedPatients.length > 0 ? (
+              paginatedPatients.map((patient) => (
+                <TableRow key={patient.id} hover>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <Avatar sx={{ width: 36, height: 36, mr: 2 }}>
+                        {patient.name.charAt(0)}
+                      </Avatar>
+                      <Typography variant="body2">{patient.name}</Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>{patient.gender}</TableCell>
+                  <TableCell>{patient.age} tuổi</TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <PhoneIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      {patient.phone}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <EmailIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      {patient.email}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{patient.address}</TableCell>
+                  <TableCell>{patient.lastVisit}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={getStatusText(patient.status)}
+                      color={getStatusColor(patient.status)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleClick(e, patient)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <Typography color="textSecondary">
+                    Không tìm thấy bệnh nhân nào
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={filteredPatients.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Số dòng mỗi trang:"
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}-${to} trong tổng số ${count}`
+        }
+      />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl) && Boolean(selectedPatient)}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={() => handleOpenDetails(selectedPatient)}>
+          <ListItemIcon>
+            <VisibilityIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Xem chi tiết</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleOpenForm(selectedPatient)}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Chỉnh sửa</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleDelete}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText primaryTypographyProps={{ color: 'error.main' }}>
+            Xóa
+          </ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Patient Form Dialog */}
+      <PatientForm
+        open={openForm}
+        onClose={handleCloseForm}
+        patient={selectedPatient}
+        onSubmit={handleSubmit}
+      />
+
+      {/* Patient Details Dialog */}
+      <PatientDetails
+        open={openDetails}
+        onClose={handleCloseDetails}
+        patient={selectedPatient}
+      />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+
+  return (
+    <Box>
+      <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5" component="h1">
+          Quản lý Bệnh nhân
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<PersonAddIcon />}
+          onClick={() => handleOpenForm()}
+        >
+          Thêm bệnh nhân
+        </Button>
+      </Box>
+
+      <Paper sx={{ mb: 3 }}>
+        <Box p={2} display="flex" alignItems="center">
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Tìm kiếm bệnh nhân..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <IconButton
+            onClick={handleFilterClick}
+            sx={{ ml: 1 }}
+            aria-label="filter"
+          >
+            <FilterListIcon />
+          </IconButton>
+        </Box>
+
+        <Menu
+          anchorEl={anchorFilterEl}
+          open={Boolean(anchorFilterEl)}
+          onClose={() => setAnchorFilterEl(null)}
+        >
+          {Object.keys(statusMap).map((status) => (
+            <MenuItem
+              key={status}
+              selected={selectedStatus === status}
+              onClick={() => {
+                setSelectedStatus(status);
+                setAnchorFilterEl(null);
+              }}
+            >
+              {status}
+            </MenuItem>
+          ))}
+        </Menu>
+      </Paper>
+
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Họ tên</TableCell>
+              <TableCell>Giới tính</TableCell>
+              <TableCell>Tuổi</TableCell>
+              <TableCell>Số điện thoại</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Địa chỉ</TableCell>
+              <TableCell>Lần khám gần nhất</TableCell>
+              <TableCell>Trạng thái</TableCell>
+              <TableCell align="right">Thao tác</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <CircularProgress />
+                </TableCell>
+              </TableRow>
+            ) : paginatedPatients.length > 0 ? (
+              paginatedPatients.map((patient) => (
+                <TableRow key={patient.id} hover>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <Avatar sx={{ width: 36, height: 36, mr: 2 }}>
+                        {patient.name.charAt(0)}
+                      </Avatar>
+                      <Typography variant="body2">{patient.name}</Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>{patient.gender}</TableCell>
+                  <TableCell>{patient.age} tuổi</TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <PhoneIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      {patient.phone}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <EmailIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      {patient.email}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{patient.address}</TableCell>
+                  <TableCell>{patient.lastVisit}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={getStatusText(patient.status)}
+                      color={getStatusColor(patient.status)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleClick(e, patient)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <Typography color="textSecondary">
+                    Không tìm thấy bệnh nhân nào
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={filteredPatients.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Số dòng mỗi trang:"
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}-${to} trong tổng số ${count}`
+        }
+      />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl) && Boolean(selectedPatient)}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={() => handleOpenDetails(selectedPatient)}>
+          <ListItemIcon>
+            <VisibilityIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Xem chi tiết</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleOpenForm(selectedPatient)}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Chỉnh sửa</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleDelete}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText primaryTypographyProps={{ color: 'error.main' }}>
+            Xóa
+          </ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Patient Form Dialog */}
+      <PatientForm
+        open={openForm}
+        onClose={handleCloseForm}
+        patient={selectedPatient}
+        onSubmit={handleSubmit}
+      />
+
+      {/* Patient Details Dialog */}
+      <PatientDetails
+        open={openDetails}
+        onClose={handleCloseDetails}
+        patient={selectedPatient}
+      />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+
+  return (
+    <Box>
+      <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5" component="h1">
+          Quản lý Bệnh nhân
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<PersonAddIcon />}
+          onClick={() => handleOpenForm()}
+        >
+          Thêm bệnh nhân
+        </Button>
+      </Box>
+
+      <Paper sx={{ mb: 3 }}>
+        <Box p={2} display="flex" alignItems="center">
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Tìm kiếm bệnh nhân..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <IconButton
+            onClick={handleFilterClick}
+            sx={{ ml: 1 }}
+            aria-label="filter"
+          >
+            <FilterListIcon />
+          </IconButton>
+        </Box>
+
+        <Menu
+          anchorEl={anchorFilterEl}
+          open={Boolean(anchorFilterEl)}
+          onClose={() => setAnchorFilterEl(null)}
+        >
+          {['Tất cả', 'Đang hoạt động', 'Ngừng hoạt động'].map((status) => (
+            <MenuItem
+              key={status}
+              selected={selectedStatus === status}
+              onClick={() => {
+                setSelectedStatus(status);
+                setAnchorFilterEl(null);
+              }}
+            >
+              {status}
+            </MenuItem>
+          ))}
+        </Menu>
+      </Paper>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Họ tên</TableCell>
+              <TableCell>Giới tính</TableCell>
+              <TableCell>Tuổi</TableCell>
+              <TableCell>Số điện thoại</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Địa chỉ</TableCell>
+              <TableCell>Lần khám gần nhất</TableCell>
+              <TableCell>Trạng thái</TableCell>
+              <TableCell align="right">Thao tác</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <CircularProgress />
+                </TableCell>
+              </TableRow>
+            ) : paginatedPatients.length > 0 ? (
+              paginatedPatients.map((patient) => (
+                <TableRow key={patient.id} hover>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <Avatar sx={{ width: 36, height: 36, mr: 2 }}>
+                        {patient.name.charAt(0)}
+                      </Avatar>
+                      <Typography variant="body2">{patient.name}</Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>{patient.gender}</TableCell>
+                  <TableCell>{patient.age} tuổi</TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <PhoneIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      {patient.phone}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <EmailIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      {patient.email}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{patient.address}</TableCell>
+                  <TableCell>{patient.lastVisit}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={patient.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                      color={patient.status === 'active' ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleClick(e, patient)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <Typography color="textSecondary">
+                    Không tìm thấy bệnh nhân nào
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={filteredPatients.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Số dòng mỗi trang:"
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}-${to} trong tổng số ${count}`
+        }
+      />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl) && Boolean(selectedPatient)}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={() => handleOpenDetails(selectedPatient)}>
+          <ListItemIcon>
+            <VisibilityIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Xem chi tiết</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleOpenForm(selectedPatient)}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Chỉnh sửa</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleDelete}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText primaryTypographyProps={{ color: 'error.main' }}>
+            Xóa
+          </ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Patient Form Dialog */}
+      <PatientForm
+        open={openForm}
+        onClose={handleCloseForm}
+        patient={selectedPatient}
+        onSubmit={handleSubmit}
+      />
+
+      {/* Patient Details Dialog */}
+      <PatientDetails
+        open={openDetails}
+        onClose={handleCloseDetails}
+        patient={selectedPatient}
+      />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       <TableContainer 
         component={Paper} 
@@ -330,6 +1135,21 @@ const Patients = () => {
         />
       </TableContainer>
 
+      {/* Patient Form Modal */}
+      <PatientForm
+        open={openForm}
+        onClose={handleCloseForm}
+        patient={editingPatient}
+        onSubmit={handleSubmitPatient}
+      />
+
+      {/* Patient Details Modal */}
+      <PatientDetails
+        open={openDetails}
+        onClose={handleCloseDetails}
+        patient={selectedPatient}
+      />
+
       {/* Action Menu */}
       <Menu
         anchorEl={anchorEl}
@@ -344,20 +1164,26 @@ const Patients = () => {
           horizontal: 'right',
         }}
       >
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={handleEditPatient}>
           <ListItemIcon>
             <EditIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Chỉnh sửa thông tin</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={handleViewDetails}>
+          <ListItemIcon>
+            <LocalHospitalIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Xem hồ sơ chi tiết</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleViewHistory}>
           <ListItemIcon>
             <EventNoteIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Xem lịch sử khám</ListItemText>
         </MenuItem>
         <Divider />
-        <MenuItem onClick={handleMenuClose} sx={{ color: 'error.main' }}>
+        <MenuItem onClick={handleDeletePatient} sx={{ color: 'error.main' }}>
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />
           </ListItemIcon>
