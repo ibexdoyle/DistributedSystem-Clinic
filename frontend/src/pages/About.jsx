@@ -135,7 +135,7 @@ const About = () => {
                   </ListItem>
                 </List>
                 
-                <Box mt={3}>
+                {/* <Box mt={3}>
                   <Typography variant="subtitle2" gutterBottom>
                     Tài liệu liên quan:
                   </Typography>
@@ -147,7 +147,7 @@ const About = () => {
                       Kết quả quan trắc môi trường Vinmec Phú Quốc
                     </Link>
                   </Box>
-                </Box>
+                </Box> */}
               </CardContent>
             </Card>
           </Grid>

@@ -31,7 +31,7 @@ import {
   Logout as LogoutIcon,
   Settings as SettingsIcon
 } from '@mui/icons-material';
-import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink, Link } from 'react-router-dom';
 
 import logoVinmec from "../../assets/logoVinmec.svg"; 
 
@@ -73,11 +73,22 @@ const Layout = ({ children }) => {
   const drawer = (
     <div>
       <Toolbar sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center', p: 2 }}>
-  <Box component="img" src={logoVinmec} alt="Vinmec Logo" sx={{ height: 40 }} />
-  {/* <Typography variant="h6" noWrap component="div">
-    Vinmec Phú Quốc
-  </Typography> */}
-</Toolbar>
+        <Box 
+          component={Link} 
+          to="/" 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            textDecoration: 'none',
+            '&:hover': { cursor: 'pointer' }
+          }}
+        >
+          <Box component="img" src={logoVinmec} alt="Vinmec Logo" sx={{ height: 40 }} />
+          {/* <Typography variant="h6" noWrap component="div" color="text.primary" sx={{ ml: 1 }}>
+            Vinmec Phú Quốc
+          </Typography> */}
+        </Box>
+      </Toolbar>
       <Divider />
       <List>
         {menuItems.map((item) => (

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { Suspense, useEffect } from 'react';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet, useNavigate } from 'react-router-dom';
+import { Box, CircularProgress } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './layouts/Navbar';
 import Home from './pages/Home';
@@ -19,12 +19,21 @@ import Doctors from './pages/Doctors';
 import News from './pages/News';
 import Contact from './pages/Contact';
 import EmergencyDepartment from './pages/EmergencyDepartment';
+import PediatricsDepartment from './pages/PediatricsDepartment'; 
+import DentistryDepartment from './pages/DentistryDepartment';
+import OphthalmologyDepartment from './pages/OphthalmologyDepartment';
+import ENTDepartment from './pages/ENTDepartment';
+import NeurologyDepartment from './pages/NeurologyDepartment';
 import Profile from './pages/Profile';
 import Admin from './pages/admin';
-// import AdminLayout from './pages/admin/Layout';
-// import AdminDashboard from './pages/admin/Dashboard';
-// import AdminUsers from './pages/admin/Users';
-// import AdminPatients from './pages/admin/Patients';
+
+// Lazy load doctor components
+const DoctorLayout = React.lazy(() => import('./layouts/DoctorLayout'));
+const DoctorDashboard = React.lazy(() => import('./pages/doctor/Dashboard'));
+const DoctorAppointments = React.lazy(() => import('./pages/doctor/Appointments'));
+const DoctorPatients = React.lazy(() => import('./pages/doctor/Patients'));
+const DoctorPrescriptions = React.lazy(() => import('./pages/doctor/Prescriptions'));
+const DoctorMedicalRecords = React.lazy(() => import('./pages/doctor/MedicalRecords'));
 
 // Protected Route component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -44,86 +53,157 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   return children || <Outlet />;
 };
 
+// Doctor Route Wrapper
+const DoctorRoute = ({ children }) => {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (user.role !== 'doctor') {
+    return <Navigate to="/not-found" replace />;
+  }
+
+  return children;
+};
+
 function MainContent() {
   const location = useLocation();
-  // Kiểm tra xem có phải là trang admin không
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isDoctorRoute = location.pathname.startsWith('/doctor');
+  
+  // Redirect to appropriate dashboard based on role after login
+  useEffect(() => {
+    if (user && location.pathname === '/') {
+      if (user.role === 'doctor') {
+        navigate('/doctor/dashboard');
+      } else if (user.role === 'admin') {
+        navigate('/admin');
+      }
+    }
+  }, [user, location, navigate]);
   
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {!isAdminRoute && <Navbar />}
+      {!isAdminRoute && !isDoctorRoute && <Navbar />}
       <Box component="main" sx={{ 
         flex: 1, 
         width: '100%', 
         maxWidth: '100%', 
         overflowX: 'hidden',
-        backgroundColor: isAdminRoute ? '#f5f7fa' : 'inherit',
-        padding: isAdminRoute ? '20px' : 0
+        backgroundColor: isAdminRoute || isDoctorRoute ? '#f5f7fa' : 'inherit',
+        padding: (isAdminRoute || isDoctorRoute) ? '20px' : 0
       }}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/doctors" element={<Doctors />} />
-          <Route path="/news" element={<News />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/specialties/cap-cuu" element={<EmergencyDepartment />} />
-          
-          {/* Protected routes */}
-          <Route path="/patients" element={
-            <ProtectedRoute>
-              <Patients />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/appointments" element={
-            <ProtectedRoute>
-              <Appointments />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/prescriptions" element={
-            <ProtectedRoute>
-              <Prescriptions />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/notifications" element={
-            <ProtectedRoute>
-              <Notifications />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/my-appointments" element={
-            <ProtectedRoute>
-              <MyAppointments />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/my-medical-records" element={
-            <ProtectedRoute>
-              <MyMedicalRecords />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          
-          {/* Admin Routes */}
-          <Route path="/admin/*" element={
-            <ProtectedRoute adminOnly>
-              <Admin />
-            </ProtectedRoute>
-          } />
-          
-          {/* Redirect all other paths to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+            <CircularProgress />
+          </Box>
+        }>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/doctors" element={<Doctors />} />
+            <Route path="/news" element={<News />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/specialties/cap-cuu" element={<EmergencyDepartment />} />
+            <Route path="/specialties/nhi" element={<PediatricsDepartment />} />
+            <Route path="/specialties/rang-ham-mat" element={<DentistryDepartment />} />
+            <Route path="/specialties/mat" element={<OphthalmologyDepartment />} />
+            <Route path="/specialties/tai-mui-hong" element={<ENTDepartment />} />
+            <Route path="/specialties/than-kinh" element={<NeurologyDepartment />} />
+           
+            
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            
+            {/* Patient routes */}
+            <Route path="/patients" element={
+              <ProtectedRoute>
+                {user?.role === 'doctor' ? (
+                  <Navigate to="/doctor/patients" replace />
+                ) : (
+                  <Patients />
+                )}
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/appointments" element={
+              <ProtectedRoute>
+                {user?.role === 'doctor' ? (
+                  <Navigate to="/doctor/appointments" replace />
+                ) : (
+                  <Appointments />
+                )}
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/prescriptions" element={
+              <ProtectedRoute>
+                {user?.role === 'doctor' ? (
+                  <Navigate to="/doctor/prescriptions" replace />
+                ) : (
+                  <Prescriptions />
+                )}
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/my-appointments" element={
+              <ProtectedRoute>
+                <MyAppointments />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/my-medical-records" element={
+              <ProtectedRoute>
+                <MyMedicalRecords />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            
+            {/* Doctor Routes */}
+            <Route path="/doctor" element={
+              <DoctorRoute>
+                <DoctorLayout />
+              </DoctorRoute>
+            }>
+              <Route index element={<Navigate to="/doctor/dashboard" replace />} />
+              <Route path="dashboard" element={<DoctorDashboard />} />
+              <Route path="appointments" element={<DoctorAppointments />} />
+              <Route path="patients" element={<DoctorPatients />} />
+              <Route path="medical-records" element={<DoctorMedicalRecords />} />
+              <Route path="prescriptions" element={<DoctorPrescriptions />} />
+              <Route path="*" element={<Navigate to="/doctor/dashboard" replace />} />
+            </Route>
+            
+            {/* Admin Routes */}
+            <Route path="/admin/*" element={
+              <ProtectedRoute adminOnly>
+                <Admin />
+              </ProtectedRoute>
+            } />
+            
+            {/* Redirect all other paths to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </Box>
-      {!isAdminRoute && <Footer />}
+      {!isAdminRoute && !isDoctorRoute && <Footer />}
     </Box>
   );
 }

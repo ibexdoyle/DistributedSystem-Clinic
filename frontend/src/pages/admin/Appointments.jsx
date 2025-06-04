@@ -86,28 +86,51 @@ const statusMap = {
 };
 
 const Appointments = () => {
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState(sampleAppointments);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filterDate, setFilterDate] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDateAppointments, setShowDateAppointments] = useState(true);
 
-  // Load dữ liệu mẫu khi component mount
-  useEffect(() => {
-    // Giả lập việc tải dữ liệu từ API
-    const timer = setTimeout(() => {
-      setAppointments(sampleAppointments);
+  // Làm mới dữ liệu
+  const handleRefresh = () => {
+    setIsLoading(true);
+    // Giả lập việc tải lại dữ liệu
+    setTimeout(() => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      setAppointments([...sampleAppointments]);
+      setFilterStatus('all');
+      setSearchTerm('');
+      setFilterDate(today);
+      setSelectedDate(today);
+      setShowDateAppointments(true);
+      setPage(0);
       setIsLoading(false);
-    }, 500);
+    }, 300);
+  };
 
-    return () => clearTimeout(timer);
+  // Khởi tạo dữ liệu mẫu
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    setFilterStatus('all');
+    setSearchTerm('');
+    setFilterDate(today);
+    setSelectedDate(today);
+    setShowDateAppointments(true);
+    
+    // Set the document title
+    document.title = `Lịch hẹn ngày ${format(today, 'dd/MM/yyyy')} | Hệ thống quản lý phòng khám`;
   }, []);
 
   // Xử lý thay đổi trang
@@ -122,53 +145,109 @@ const Appointments = () => {
   };
 
   // Lọc lịch hẹn
-  const filteredAppointments = appointments.filter(appointment => {
-    const appointmentDate = parseISO(appointment.date);
+  const filteredAppointments = React.useMemo(() => {
+    if (!appointments || appointments.length === 0) return [];
     
-    // Lọc theo ngày được chọn
-    if (selectedDate && !isSameDay(appointmentDate, selectedDate)) {
-      return false;
-    }
-    // Nếu có bộ lọc ngày
-    else if (filterDate) {
-      if (format(appointmentDate, 'yyyy-MM-dd') !== format(filterDate, 'yyyy-MM-dd')) {
+    return appointments.filter(appointment => {
+      if (!appointment || !appointment.date) return false;
+      
+      try {
+        const appointmentDate = new Date(appointment.date);
+        if (isNaN(appointmentDate.getTime())) return false;
+        
+        // Lọc theo ngày được chọn
+        if (selectedDate) {
+          try {
+            const selected = new Date(selectedDate);
+            selected.setHours(0, 0, 0, 0);
+            appointmentDate.setHours(0, 0, 0, 0);
+            
+            if (appointmentDate.getTime() !== selected.getTime()) {
+              return false;
+            }
+          } catch (error) {
+            console.error('Lỗi khi lọc ngày:', error);
+            return false;
+          }
+        }
+        // Nếu có bộ lọc ngày
+        else if (filterDate) {
+          try {
+            const filter = new Date(filterDate);
+            filter.setHours(0, 0, 0, 0);
+            appointmentDate.setHours(0, 0, 0, 0);
+            
+            if (appointmentDate.getTime() !== filter.getTime()) {
+              return false;
+            }
+          } catch (error) {
+            console.error('Lỗi khi lọc ngày:', error);
+            return false;
+          }
+        }
+        
+        const matchesStatus = filterStatus === 'all' || appointment.status === filterStatus;
+        
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = searchTerm === '' || 
+          (appointment.patientName && appointment.patientName.toLowerCase().includes(searchLower)) ||
+          (appointment.phone && appointment.phone.includes(searchTerm)) ||
+          (appointment.doctor && appointment.doctor.toLowerCase().includes(searchLower));
+        
+        return matchesStatus && matchesSearch;
+      } catch (error) {
+        console.error('Lỗi khi xử lý dữ liệu lịch hẹn:', error);
         return false;
       }
-    }
-    
-    const matchesStatus = filterStatus === 'all' || appointment.status === filterStatus;
-    
-    const matchesSearch = searchTerm === '' || 
-      appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.phone.includes(searchTerm) ||
-      appointment.doctor.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesStatus && matchesSearch;
-  });
+    });
+  }, [appointments, selectedDate, filterDate, filterStatus, searchTerm]);
 
   // Xử lý chọn ngày
   const handleDateSelect = (date) => {
-    setSelectedDate(date);
+    if (date) {
+      const selectedDate = new Date(date);
+      selectedDate.setHours(0, 0, 0, 0);
+      setSelectedDate(selectedDate);
+      setFilterDate(selectedDate);
+      
+      // Update the document title
+      document.title = `Lịch hẹn ngày ${format(selectedDate, 'dd/MM/yyyy')} | Hệ thống quản lý phòng khám`;
+    }
   };
 
   // Chuyển đến ngày hôm trước
   const handlePreviousDay = () => {
     const prevDay = new Date(selectedDate);
     prevDay.setDate(prevDay.getDate() - 1);
+    prevDay.setHours(0, 0, 0, 0);
     setSelectedDate(prevDay);
+    setFilterDate(prevDay);
+    
+    // Update the document title
+    document.title = `Lịch hẹn ngày ${format(prevDay, 'dd/MM/yyyy')} | Hệ thống quản lý phòng khám`;
   };
 
   // Chuyển đến ngày hôm sau
   const handleNextDay = () => {
     const nextDay = new Date(selectedDate);
     nextDay.setDate(nextDay.getDate() + 1);
+    nextDay.setHours(0, 0, 0, 0);
     setSelectedDate(nextDay);
+    setFilterDate(nextDay);
+    
+    // Update the document title
+    document.title = `Lịch hẹn ngày ${format(nextDay, 'dd/MM/yyyy')} | Hệ thống quản lý phòng khám`;
   };
 
   // Chuyển về hôm nay
   const handleToday = () => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     setSelectedDate(today);
+    setFilterDate(today);
+    
+    // Update the document title
+    document.title = `Lịch hẹn ngày ${format(today, 'dd/MM/yyyy')} | Hệ thống quản lý phòng khám`;
   };
 
   // Quay lại xem lịch
@@ -180,11 +259,17 @@ const Appointments = () => {
 
   // Làm mới bộ lọc
   const handleResetFilters = () => {
-    setFilterDate(null);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    setFilterDate(today);
     setFilterStatus('all');
     setSearchTerm('');
-    setShowDateAppointments(false);
-    setSelectedDate(null);
+    setShowDateAppointments(true);
+    setSelectedDate(today);
+    
+    // Update the document title
+    document.title = `Lịch hẹn ngày ${format(today, 'dd/MM/yyyy')} | Hệ thống quản lý phòng khám`;
   };
 
   // Cập nhật trạng thái lịch hẹn
