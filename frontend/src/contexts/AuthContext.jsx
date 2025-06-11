@@ -50,11 +50,25 @@ export function AuthProvider({ children }) {
     // Note: We'll handle navigation in the component that calls logout
   }, []);
 
+  const updateUserProfile = useCallback(async (userData) => {
+    // Trong thực tế, đây sẽ là lời gọi API đến backend
+    // Ở đây chúng ta chỉ cập nhật trong localStorage và state
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const updatedUser = { ...currentUser, ...userData };
+        setCurrentUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        resolve(updatedUser);
+      }, 500); // Giả lập delay mạng
+    });
+  }, [currentUser]);
+
   const value = {
     currentUser,
     user: currentUser, // Alias for compatibility with existing code
     login,
     logout,
+    updateUserProfile,
     isAuthenticated: !!currentUser,
   };
 

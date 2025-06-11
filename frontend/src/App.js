@@ -3,6 +3,7 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SnackbarProvider } from 'notistack';
 import Navbar from './layouts/Navbar';
 import Home from './pages/Home';
 import Footer from './layouts/Footer';
@@ -187,7 +188,9 @@ function MainContent() {
               <Route path="appointments" element={<DoctorAppointments />} />
               <Route path="patients" element={<DoctorPatients />} />
               <Route path="medical-records" element={<DoctorMedicalRecords />} />
-              <Route path="prescriptions" element={<DoctorPrescriptions />} />
+              <Route path="prescriptions" element={<DoctorPrescriptions />}>
+                <Route path="new" element={<DoctorPrescriptions />} />
+              </Route>
               <Route path="*" element={<Navigate to="/doctor/dashboard" replace />} />
             </Route>
             
@@ -223,9 +226,18 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <SnackbarProvider 
+      maxSnack={3}
+      anchorOrigin={{
+        vertical: 'top',
+        horizontal: 'right',
+      }}
+      autoHideDuration={3000}
+    >
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </SnackbarProvider>
   );
 }
 

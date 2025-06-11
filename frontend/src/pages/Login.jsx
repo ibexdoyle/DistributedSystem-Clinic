@@ -126,19 +126,23 @@ const Login = ({ onLogin }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
     
+    // Reset messages
+    setError('');
+    setSuccess('');
+    
     // Validate form
     if (!fullName || !email || !phone || !password || !confirmPassword) {
-      setError('Vui lòng điền đầy đủ thông tin!');
+      setError('Vui lòng điền đầy đủ thông tin bắt buộc!');
       return;
     }
 
     if (!validateEmail(email)) {
-      setError('Email không hợp lệ!');
+      setError('Email không đúng định dạng!');
       return;
     }
 
     if (!validatePhone(phone)) {
-      setError('Số điện thoại không hợp lệ!');
+      setError('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam.');
       return;
     }
 
@@ -153,21 +157,40 @@ const Login = ({ onLogin }) => {
     }
     
     setIsLoading(true);
-    setError('');
     
     try {
-      // Simulate API call for registration
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSuccess('Đăng ký tài khoản thành công! Vui lòng kiểm tra email để xác nhận tài khoản.');
-      setOpenRegister(false);
-      // Reset form
-      setFullName('');
-      setEmail('');
-      setPhone('');
-      setPassword('');
-      setConfirmPassword('');
+      // Simulate API call for registration with delay
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          // Simulate random success/failure for demo
+          const isSuccess = Math.random() > 0.3; // 70% success rate for demo
+          isSuccess ? resolve() : reject();
+        }, 1500);
+      });
+      
+      // On success
+      const successMsg = 'Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ.';
+      setSuccess(successMsg);
+      
+      // Reset form after a short delay
+      setTimeout(() => {
+        setOpenRegister(false);
+        setFullName('');
+        setEmail('');
+        setPhone('');
+        setPassword('');
+        setConfirmPassword('');
+      }, 2000);
+      
     } catch (err) {
-      setError('Đăng ký thất bại. Có thể email đã được sử dụng. Vui lòng thử lại!');
+      // Different error messages for different scenarios
+      const errorMessages = [
+        'Email này đã được đăng ký. Vui lòng sử dụng email khác.',
+        'Số điện thoại đã được sử dụng. Vui lòng kiểm tra lại.',
+        'Đã có lỗi xảy ra. Vui lòng thử lại sau.'
+      ];
+      const randomError = errorMessages[Math.floor(Math.random() * errorMessages.length)];
+      setError(randomError);
     } finally {
       setIsLoading(false);
     }
@@ -358,97 +381,117 @@ const Login = ({ onLogin }) => {
         onClose={handleCloseRegister} 
         maxWidth="sm" 
         fullWidth
-        onClick={(e) => e.stopPropagation()}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            p: 1
+          }
+        }}
       >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">Đăng ký tài khoản</Typography>
-            <IconButton onClick={handleCloseRegister}>
-              <Close />
-            </IconButton>
-          </Box>
+        <DialogTitle sx={{ 
+          bgcolor: 'primary.main', 
+          color: 'white',
+          py: 2,
+          textAlign: 'center',
+          fontSize: '1.25rem',
+          fontWeight: 'bold'
+        }}>
+          ĐĂNG KÝ TÀI KHOẢN
         </DialogTitle>
-        <DialogContent>
-          <form onSubmit={handleRegister}>
+        <DialogContent sx={{ p: 4 }}>
+          {(error || success) && (
+            <Alert 
+              severity={error ? 'error' : 'success'}
+              sx={{ mb: 3, borderRadius: 1 }}
+              onClose={() => error ? setError('') : setSuccess('')}
+            >
+              {error || success}
+            </Alert>
+          )}
+          
+          <Box component="form" onSubmit={handleRegister}>
             <TextField
-              margin="normal"
-              required
-              fullWidth
               label="Họ và tên"
+              fullWidth
+              margin="normal"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              autoComplete="name"
+              onChange={e => setFullName(e.target.value)}
+              required
+              size="small"
               sx={{ mb: 2 }}
             />
             <TextField
-              margin="normal"
-              required
-              fullWidth
               label="Email"
               type="email"
+              fullWidth
+              margin="normal"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
+              onChange={e => setEmail(e.target.value)}
+              required
+              size="small"
               sx={{ mb: 2 }}
             />
             <TextField
-              margin="normal"
-              required
-              fullWidth
               label="Số điện thoại"
+              fullWidth
+              margin="normal"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              autoComplete="tel"
+              onChange={e => setPhone(e.target.value)}
+              required
+              size="small"
               sx={{ mb: 2 }}
+              placeholder="VD: 0912345678"
             />
             <TextField
-              margin="normal"
-              required
-              fullWidth
               label="Mật khẩu"
               type={showPassword ? 'text' : 'password'}
+              fullWidth
+              margin="normal"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
+              onChange={e => setPassword(e.target.value)}
+              required
+              size="small"
               sx={{ mb: 2 }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
                       aria-label="toggle password visibility"
-                      onClick={handleClickShowPassword}
+                      onClick={() => setShowPassword(!showPassword)}
                       onMouseDown={handleMouseDownPassword}
                       edge="end"
+                      size="small"
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
-                ),
+                )
               }}
             />
             <TextField
-              margin="normal"
-              required
-              fullWidth
               label="Xác nhận mật khẩu"
               type={showPassword ? 'text' : 'password'}
+              fullWidth
+              margin="normal"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
+              onChange={e => setConfirmPassword(e.target.value)}
+              required
+              size="small"
               sx={{ mb: 3 }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
                       aria-label="toggle password visibility"
-                      onClick={handleClickShowPassword}
+                      onClick={() => setShowPassword(!showPassword)}
                       onMouseDown={handleMouseDownPassword}
                       edge="end"
+                      size="small"
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
-                ),
+                )
               }}
             />
             <Button
@@ -457,15 +500,44 @@ const Login = ({ onLogin }) => {
               variant="contained"
               color="primary"
               disabled={isLoading}
-              sx={{ py: 1.5, mb: 2 }}
+              sx={{
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                borderRadius: 1,
+                boxShadow: 'none',
+                mb: 2,
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }
+              }}
               size="large"
             >
-              {isLoading ? 'Đang xử lý...' : 'Đăng ký tài khoản'}
+              {isLoading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG KÝ TÀI KHOẢN'}
             </Button>
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
-              Bằng cách đăng ký, bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của chúng tôi
+          </Box>
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Bằng cách đăng ký, bạn đồng ý với các điều khoản và điều kiện của chúng tôi
             </Typography>
-          </form>
+          </Box>
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Typography variant="body2">
+              Đã có tài khoản?{' '}
+              <Link 
+                href="#" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleCloseRegister();
+                }}
+                sx={{ fontWeight: 'bold' }}
+              >
+                Đăng nhập ngay
+              </Link>
+            </Typography>
+          </Box>
         </DialogContent>
       </Dialog>
       

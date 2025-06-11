@@ -40,13 +40,11 @@ import {
 } from '@mui/icons-material';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useSnackbar } from 'notistack';
 
 const PrescriptionsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { patientId } = useParams();
-  const { enqueueSnackbar } = useSnackbar();
   
   // Check if in create new prescription mode
   const isCreateMode = location.pathname.endsWith('/new');
@@ -80,11 +78,14 @@ const PrescriptionsPage = () => {
   }, [location.state, isCreateMode]);
   // Mock prescriptions data
   const [prescriptions, setPrescriptions] = useState([
+    email: 'nguyenvana@example.com'
+  };
+
+  const [prescriptions, setPrescriptions] = useState([
     {
       id: 1,
       patientId: 'P001',
       patientName: 'Nguyễn Văn A',
-      email: 'nguyenvana@example.com',
       date: '2025-06-10T10:30:00',
       status: 'completed',
       diagnosis: 'Viêm họng cấp',
@@ -98,7 +99,6 @@ const PrescriptionsPage = () => {
       id: 2,
       patientId: 'P002',
       patientName: 'Trần Thị B',
-      email: 'tranthib@example.com',
       date: '2025-06-09T14:15:00',
       status: 'completed',
       diagnosis: 'Cảm cúm',
@@ -106,7 +106,7 @@ const PrescriptionsPage = () => {
       medicines: [
         { id: 3, name: 'Tiffy', dosage: '1 viên', frequency: '3 lần/ngày', duration: '3 ngày' }
       ]
-    }
+    },
   ]);
   
   const [openDialog, setOpenDialog] = useState(false);
@@ -163,57 +163,31 @@ const PrescriptionsPage = () => {
     setSelectedPrescription(null);
   };
 
-  const handleSavePrescription = async () => {
-    try {
-      // Validate form
-      if (!selectedPrescription?.patientName || !diagnosis) {
-        enqueueSnackbar('Vui lòng điền đầy đủ thông tin bắt buộc', { variant: 'error' });
-        return;
-      }
+  const handleSavePrescription = () => {
+    const newPrescription = {
+      id: selectedPrescription?.id || Date.now(),
+      patientId: currentPatient.id,
+      patientName: currentPatient.name,
+      date: new Date().toISOString(),
+      status: 'completed',
+      diagnosis,
+      note,
+      medicines: selectedPrescription.medicines.filter(med => med.name.trim() !== '')
+    };
 
-      if (selectedPrescription.medicines.length === 0) {
-        enqueueSnackbar('Vui lòng thêm ít nhất một loại thuốc', { variant: 'warning' });
-        return;
-      }
-
-      const newPrescription = {
-        id: selectedPrescription?.id || Date.now(),
-        patientId: currentPatient.id,
-        patientName: selectedPrescription.patientName,
-        date: new Date().toISOString(),
-        status: 'completed',
-        diagnosis,
-        note,
-        medicines: selectedPrescription.medicines.filter(med => med.name.trim() !== '')
-      };
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      if (selectedPrescription?.id) {
-        // Update existing prescription
-        const updatedPrescriptions = prescriptions.map(p => 
-          p.id === selectedPrescription.id ? newPrescription : p
-        );
-        setPrescriptions(updatedPrescriptions);
-        enqueueSnackbar('Cập nhật đơn thuốc thành công', { variant: 'success' });
-      } else {
-        // Add new prescription
-        setPrescriptions([newPrescription, ...prescriptions]);
-        enqueueSnackbar('Tạo đơn thuốc thành công', { variant: 'success' });
-      }
-      
-      setOpenDialog(false);
-      setSelectedPrescription(null);
-      
-      // If in create mode, navigate back to prescriptions list
-      if (isCreateMode) {
-        navigate('/doctor/prescriptions');
-      }
-    } catch (error) {
-      console.error('Error saving prescription:', error);
-      enqueueSnackbar('Đã có lỗi xảy ra khi lưu đơn thuốc', { variant: 'error' });
+    if (selectedPrescription) {
+      // Update existing prescription
+      const updatedPrescriptions = prescriptions.map(p => 
+        p.id === selectedPrescription.id ? newPrescription : p
+      );
+      setPrescriptions(updatedPrescriptions);
+    } else {
+      // Add new prescription
+      setPrescriptions([newPrescription, ...prescriptions]);
     }
+    
+    setOpenDialog(false);
+    setSelectedPrescription(null);
   };
 
   const handleAddMedicine = () => {
@@ -258,7 +232,7 @@ const PrescriptionsPage = () => {
     if (isCreateMode) {
       navigate('/doctor/prescriptions');
     } else {
-      handleCloseDialog();
+      handleCloseForm();
     }
   };
 

@@ -97,48 +97,113 @@ const Profile = () => {
     }));
   };
 
+  const validateForm = () => {
+    const errors = [];
+    
+    // Chỉ validate các trường có giá trị
+    if (formData.name && formData.name.trim() === '') {
+      errors.push('Tên không được để trống');
+    }
+    
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.push('Email không hợp lệ');
+    }
+    
+    if (formData.phone && !/^(\+?84|0)[1-9][0-9]{8}$/.test(formData.phone)) {
+      errors.push('Số điện thoại không hợp lệ (10-11 số, bắt đầu bằng 0 hoặc +84)');
+    }
+    
+    // Kiểm tra ngày sinh nếu có nhập
+    if (formData.dateOfBirth) {
+      const dob = new Date(formData.dateOfBirth);
+      const today = new Date();
+      if (dob >= today) {
+        errors.push('Ngày sinh phải nhỏ hơn ngày hiện tại');
+      }
+    }
+    
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    // Basic validation before submitting
-    if (!formData.name) {
-      setError("Vui lòng nhập họ và tên!");
+    // Lọc ra chỉ các trường có giá trị để gửi lên server
+    const fieldsToUpdate = Object.keys(formData).reduce((acc, key) => {
+      if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
+        acc[key] = formData[key];
+      }
+      return acc;
+    }, {});
+
+    // Nếu không có trường nào được cập nhật
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      setError('Vui lòng nhập thông tin cần cập nhật');
       setOpenSnackbar(true);
       return;
     }
-    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
-      setError("Vui lòng nhập email hợp lệ!");
-      setOpenSnackbar(true);
-      return;
-    }
-    if (!formData.phone || !/^(\+?84|0)[1-9][0-9]{8}$/.test(formData.phone)) {
-      setError("Vui lòng nhập số điện thoại hợp lệ!");
+
+    // Validate các trường có giá trị
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join('. '));
       setOpenSnackbar(true);
       return;
     }
 
     try {
-      // Simulate API call for testing (remove this when backend is ready)
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
+      // Chỉ gửi các trường có giá trị
+      const response = await updateUserProfile(fieldsToUpdate);
+      
+      // Nếu response là undefined hoặc không có lỗi, coi như thành công
+      if (!response || !response.error) {
+        setSuccess("Cập nhật thông tin thành công!");
+        setOpenSnackbar(true);
+        setIsEditing(false);
 
-      // Update user profile (this will call the actual API when implemented by BE)
-      await updateUserProfile(formData);
-
-      // Simulate a successful response for testing
-      setSuccess("Cập nhật thông tin thành công!");
-      setOpenSnackbar(true);
-      setIsEditing(false);
-
-      // If avatar is updated, simulate uploading it
-      if (selectedFile) {
-        await handleAvatarUpload();
+        // Nếu có cập nhật ảnh đại diện
+        if (selectedFile) {
+          await handleAvatarUpload();
+        }
+        
+        // Cập nhật lại thông tin người dùng hiển thị
+        if (user) {
+          setFormData(prev => ({
+            ...prev,
+            ...fieldsToUpdate
+          }));
+        }
+      } else {
+        // Xử lý lỗi từ API nếu có
+        setError(response.error || "Có lỗi xảy ra khi cập nhật thông tin");
+        setOpenSnackbar(true);
       }
     } catch (err) {
-      // Log the error for debugging
       console.error("Profile update error:", err);
-      setError("Có lỗi xảy ra khi cập nhật thông tin. Vui lòng thử lại.");
+      
+      // More specific error handling
+      let errorMessage = "Có lỗi xảy ra khi cập nhật thông tin. Vui lòng thử lại.";
+      
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        if (err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response.status === 401) {
+          errorMessage = "Bạn cần đăng nhập để thực hiện thao tác này";
+        } else if (err.response.status === 400) {
+          errorMessage = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin nhập.";
+        } else if (err.response.status >= 500) {
+          errorMessage = "Lỗi máy chủ. Vui lòng thử lại sau.";
+        }
+      } else if (err.request) {
+        // The request was made but no response was received
+        errorMessage = "Không nhận được phản hồi từ máy chủ. Vui lòng kiểm tra kết nối mạng.";
+      }
+      
+      setError(errorMessage);
       setOpenSnackbar(true);
     }
   };

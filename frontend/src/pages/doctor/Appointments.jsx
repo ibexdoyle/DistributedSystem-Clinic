@@ -56,18 +56,34 @@ const AppointmentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [tabValue, setTabValue] = useState(0);
 
+  // Helper function to remove Vietnamese diacritics
+  const removeAccents = (str) => {
+    return str.normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+  };
+
   const filteredAppointments = appointments.filter(appt => {
+    const apptDate = parseISO(appt.time);
+    const searchTermLower = searchTerm.toLowerCase().trim();
+    const patientNameLower = appt.patientName.toLowerCase();
+    
     const matchesSearch = searchTerm === '' || 
-      appt.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patientNameLower.includes(searchTermLower) ||
+      removeAccents(patientNameLower).includes(removeAccents(searchTermLower)) ||
       appt.phone.includes(searchTerm);
       
-    const isUpcoming = isAfter(parseISO(appt.time), new Date());
+    const isUpcoming = isAfter(apptDate, new Date());
+    const isSelectedDate = selectedDate ? 
+      apptDate.toDateString() === selectedDate.toDateString() : 
+      true;
+      
     const matchesTab = 
-      (tabValue === 0 && isToday(parseISO(appt.time))) || // Hôm nay
+      (tabValue === 0 && isToday(apptDate)) || // Hôm nay
       (tabValue === 1 && isUpcoming) || // Sắp tới
       (tabValue === 2); // Tất cả
       
-    return matchesSearch && matchesTab;
+    return matchesSearch && matchesTab && isSelectedDate;
   });
 
   const handleStartAppointment = (appointmentId) => {

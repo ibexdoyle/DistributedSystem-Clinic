@@ -7,26 +7,22 @@ import {
   Card,
   CardContent,
   CardActions,
-  Avatar,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions,
+  DialogActions as MuiDialogActions,
   TextField,
-  IconButton,
   InputAdornment,
   Pagination,
-  Stack
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import AccountCircle from '@mui/icons-material/AccountCircle';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Navbar from '../layouts/Navbar';
 
 const doctors = [
   {
@@ -134,11 +130,51 @@ const Doctors = () => {
     setCurrentPage(page);
   };
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+
+  // Preload images to prevent flickering
+  const preloadImages = (imageUrls) => {
+    imageUrls.forEach(url => {
+      const img = new Image();
+      img.src = url;
+    });
+  };
+
+  // Preload all doctor images on component mount
+  React.useEffect(() => {
+    const imageUrls = doctors.map(doctor => doctor.image);
+    preloadImages(imageUrls);
+  }, []);
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Đội ngũ bác sĩ
-      </Typography>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Navbar />
+      <Container maxWidth="lg" sx={{ py: 4, flex: 1 }}>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          gutterBottom 
+          sx={{ 
+            fontWeight: 'bold',
+            color: 'primary.main',
+            mb: 4,
+            textAlign: 'center',
+            position: 'relative',
+            '&:after': {
+              content: '""',
+              display: 'block',
+              width: '80px',
+              height: '4px',
+              background: 'linear-gradient(90deg, #1976d2, #64b5f6)',
+              margin: '16px auto 0',
+              borderRadius: '2px'
+            }
+          }}
+        >
+          Đội ngũ bác sĩ
+        </Typography>
 
       {/* Search Bar */}
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
@@ -163,161 +199,215 @@ const Doctors = () => {
 
       <Grid container spacing={4} sx={{ mb: 4 }}>
         {currentDoctors.map((doctor, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card
+          <Grid item xs={12} sm={6} md={3} key={index} sx={{ display: 'flex' }}>
+            <Card 
+              elevation={3}
               sx={{
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
-                p: 2,
+                transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
                 '&:hover': {
-                  boxShadow: 6,
                   transform: 'translateY(-4px)',
-                  transition: 'all 0.3s ease-in-out',
+                  boxShadow: theme.shadows[6],
                 },
+                width: '100%',
+                position: 'relative',
+                overflow: 'hidden'
               }}
             >
-              <Avatar
-                alt={doctor.alt}
-                src={doctor.image}
-                sx={{ width: 150, height: 150, mb: 2 }}
-                onError={(e) => {
-                  console.error(`Failed to load image for ${doctor.name}`);
-                  e.target.onerror = null;
-                  e.target.src = 'https://via.placeholder.com/150';
+              {/* Image Container with Fixed Aspect Ratio */}
+              <Box 
+                sx={{ 
+                  width: '100%',
+                  paddingTop: '100%', // 1:1 aspect ratio
+                  position: 'relative',
+                  backgroundColor: '#f5f5f5', // Light gray background while loading
+                  overflow: 'hidden'
                 }}
-              />
-              <CardContent sx={{ textAlign: 'center', flexGrow: 1, width: '100%' }}>
-                <Typography variant="h6" component="h2" gutterBottom>
-                  {doctor.name}
-                </Typography>
-                <Typography variant="subtitle1" color="primary" gutterBottom>
-                  {doctor.specialty}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {doctor.experience}
-                </Typography>
-                {(isPatient || isGuest) && (
-                  <CardActions sx={{ width: '100%', mt: 'auto', px: 0 }}>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      onClick={() => handleBookAppointment(doctor)}
-                      sx={{
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: 3,
-                        },
-                      }}
-                    >
-                      Đặt lịch khám
-                    </Button>
-                  </CardActions>
-                )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* Pagination */}
-        {filteredDoctors.length > itemsPerPage && (
-          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', gap: 2 }}>
-            <IconButton 
-              onClick={() => handlePageChange(currentPage - 1)} 
-              disabled={currentPage === 1}
-            >
-              <ArrowBackIosIcon />
-            </IconButton>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button 
-                key={page} 
-                variant={currentPage === page ? 'contained' : 'outlined'} 
-                onClick={() => handlePageChange(page)} 
-                sx={{ minWidth: 40 }}
               >
-                {page}
-              </Button>
-            ))}
-            <IconButton 
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              <ArrowForwardIosIcon />
-            </IconButton>
-          </Box>
-        )}
+                <Box
+                  component="img"
+                  src={doctor.image}
+                  alt={doctor.alt}
+                  loading="lazy"
+                  onLoad={(e) => {
+                    e.target.style.opacity = 1;
+                  }}
+                  onError={(e) => {
+                    console.error(`Failed to load image for ${doctor.name}`);
+                    e.target.onerror = null;
+                    e.target.src = 'https://via.placeholder.com/300x300?text=Doctor+Photo';
+                  }}
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    transition: 'opacity 0.3s ease-in-out',
+                    opacity: 0
+                  }}
+                />
+              </Box>
+              <CardContent sx={{ 
+                flexGrow: 1, 
+                p: 3, 
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                height: 'calc(100% - 100px)', // Adjust based on your needs
+                minHeight: '180px' // Ensure minimum height for consistency
+              }}>
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="h6" component="h3" sx={{
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    mb: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 1,
+                    WebkitBoxOrient: 'vertical',
+                    lineHeight: 1.4,
+                    minHeight: '1.4em' // Ensure consistent height for one line
+                  }}>
+                    {doctor.name}
+                  </Typography>
+                  <Typography variant="subtitle2" color="primary" sx={{
+                    fontWeight: 500,
+                    mb: 1,
+                    minHeight: '2.5em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1.2,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>
+                    {doctor.specialty}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{
+                    mb: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 0.5,
+                    minHeight: '1.5em' // Ensure consistent height
+                  }}>
+                    {doctor.experience}
+                  </Typography>
+                </Box>
+                <CardActions sx={{ 
+                  justifyContent: 'center', 
+                  p: 0, 
+                  mt: 'auto',
+                  pt: 1,
+                  '& .MuiButton-root': {
+                    width: '100%',
+                    borderRadius: '50px',
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    py: 1,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                    '&:hover': {
+                      boxShadow: '0 6px 10px rgba(0,0,0,0.15)',
+                      transform: 'translateY(-1px)'
+                    }
+                  }
+                }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => handleBookAppointment(doctor)}
+                  >
+                    ĐẶT LỊCH KHÁM
+                  </Button>
+                </CardActions>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
-        {/* Login Dialog */}
-        <Dialog 
-          open={openLoginDialog}
-          onClose={handleClose}
-          maxWidth="sm"
-          fullWidth 
-          PaperProps={{
-            sx: {
-              borderRadius: '12px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-              overflow: 'hidden',
-            },
+      {/* Pagination */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 4 }}>
+        <Pagination
+          count={totalPages}
+          page={currentPage}
+          onChange={handlePageChange}
+          color="primary"
+          showFirstButton
+          showLastButton
+          sx={{ '& .MuiPagination-ul': { flexWrap: 'nowrap' } }}
+        />
+      </Box>
+      </Container>
+
+      {/* Login Dialog */}
+      <Dialog 
+        open={openLoginDialog}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth 
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden',
+          },
+        }}
+      >
+        <DialogTitle 
+          id="alert-dialog-title"
+          sx={{
+            bgcolor: 'primary.main',
+            color: 'white',
+            py: 2,
+            px: 3,
+            display: 'flex',
+            alignItems: 'center',
           }}
         >
-          <DialogTitle 
-            id="alert-dialog-title"
-            sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              py: 2,
-              px: 3,
-              display: 'flex',
-              alignItems: 'center',
-              '& .MuiSvgIcon-root': {
-                mr: 1.5,
-              },
-            }}
-          >
-            <AccountCircle />
-            <span>Yêu cầu đăng nhập</span>
-          </DialogTitle>
+          <span>Yêu cầu đăng nhập</span>
+        </DialogTitle>
 
-          <DialogContent sx={{ py: 3, px: 4 }}>
-            <Box textAlign="center" mb={3}>
-              <LockOutlinedIcon 
-                color="primary"
-                sx={{ fontSize: 64, mb: 2 }}
-              />
-              <Typography variant="h6" gutterBottom>
-                Đăng nhập để tiếp tục
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Vui lòng đăng nhập để đặt lịch khám với bác sĩ{' '}
-                <Box component="span" fontWeight="bold" color="primary.main">
-                  {selectedDoctor?.name}
-                </Box>
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mt={1}>
-                Chưa có tài khoản? Bạn sẽ được chuyển hướng đến trang đăng ký sau khi nhấn Đăng nhập
-              </Typography>
+        <DialogContent sx={{ py: 3, px: 4, textAlign: 'center' }}>
+          <Typography variant="h6" gutterBottom>
+            Đăng nhập để tiếp tục
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            Vui lòng đăng nhập để đặt lịch khám với bác sĩ{' '}
+            <Box component="span" fontWeight="bold" color="primary.main">
+              {selectedDoctor?.name}
             </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose} color="primary">
-              Hủy
-            </Button>
-            <Button 
-              onClick={handleLogin} 
-              variant="contained" 
-              color="primary"
-              autoFocus
-            >
-              Đăng nhập
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Container>
-    );
+          </Typography>
+        </DialogContent>
+        
+        <MuiDialogActions sx={{ justifyContent: 'center', pb: 3, px: 3 }}>
+          <Button 
+            onClick={handleClose} 
+            variant="outlined"
+            sx={{ mr: 2, minWidth: 100 }}
+          >
+            Hủy
+          </Button>
+          <Button 
+            onClick={handleLogin} 
+            color="primary" 
+            variant="contained"
+            sx={{ minWidth: 100 }}
+          >
+            Đăng nhập
+          </Button>
+        </MuiDialogActions>
+      </Dialog>
+    </Box>
+  );
 };
 
 // Add default placeholder for doctor images
