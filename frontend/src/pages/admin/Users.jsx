@@ -1,39 +1,54 @@
 import React, { useState } from 'react';
+import { vi } from 'date-fns/locale';
 import {
+  Avatar,
   Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  FormControl,
+  FormHelperText,
+  Grid,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Paper,
+  Select,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
   TablePagination,
+  TableRow,
   TextField,
-  InputAdornment,
-  IconButton,
-  Button,
-  Typography,
-  Avatar,
-  Chip,
-  Stack,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
   Tooltip,
-  Divider
+  Typography
 } from '@mui/material';
 import {
-  Search as SearchIcon,
-  MoreVert as MoreVertIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
-  PersonAdd as PersonAddIcon,
+  Edit as EditIcon,
   FilterList as FilterListIcon,
   Lock as LockIcon,
-  LockOpen as LockOpenIcon
+  LockOpen as LockOpenIcon,
+  MoreVert as MoreVertIcon,
+  PersonAdd as PersonAddIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+
+// Danh sách các vai trò trong hệ thống
+const ROLES = ['Quản trị viên', 'Bác sĩ', 'Điều dưỡng', 'Lễ tân'];
 
 // Dummy data - Thay thế bằng dữ liệu thực tế từ API
 const createUserData = (id, name, email, role, status, lastLogin) => ({
@@ -58,6 +73,18 @@ const Users = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [selectedRole, setSelectedRole] = useState('Tất cả');
   const [anchorFilterEl, setAnchorFilterEl] = useState(null);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'Bác sĩ',
+    phone: '',
+    status: 'active',
+    birthDate: null
+  });
+  const [errors, setErrors] = useState({});
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -97,6 +124,71 @@ const Users = () => {
     handleFilterClose();
   };
 
+  const handleOpenAddDialog = () => {
+    setOpenAddDialog(true);
+  };
+
+  const handleCloseAddDialog = () => {
+    setOpenAddDialog(false);
+    setNewUser({
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'Bác sĩ',
+      phone: '',
+      status: 'active',
+      birthDate: null
+    });
+    setErrors({});
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!newUser.name) newErrors.name = 'Vui lòng nhập họ tên';
+    if (!newUser.email) {
+      newErrors.email = 'Vui lòng nhập email';
+    } else if (!/\S+@\S+\.\S+/.test(newUser.email)) {
+      newErrors.email = 'Email không hợp lệ';
+    }
+    if (!newUser.password) {
+      newErrors.password = 'Vui lòng nhập mật khẩu';
+    } else if (newUser.password.length < 6) {
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    }
+    if (newUser.password !== newUser.confirmPassword) {
+      newErrors.confirmPassword = 'Mật khẩu không khớp';
+    }
+    if (!newUser.phone) {
+      newErrors.phone = 'Vui lòng nhập số điện thoại';
+    } else if (!/^(0|\+84)\d{9,10}$/.test(newUser.phone)) {
+      newErrors.phone = 'Số điện thoại không hợp lệ';
+    }
+    if (!newUser.birthDate) {
+      newErrors.birthDate = 'Vui lòng chọn ngày sinh';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAddUser = () => {
+    if (validateForm()) {
+      // Ở đây sẽ là logic gọi API để thêm người dùng mới
+      // Tạm thời chỉ hiển thị thông báo thành công
+      alert('Thêm tài khoản thành công!');
+      handleCloseAddDialog();
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewUser(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const filteredUsers = users.filter((user) => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -115,7 +207,7 @@ const Users = () => {
           variant="contained" 
           color="primary" 
           startIcon={<PersonAddIcon />}
-          onClick={() => {}}
+          onClick={handleOpenAddDialog}
         >
           Thêm tài khoản
         </Button>
@@ -298,6 +390,145 @@ const Users = () => {
           <ListItemText>Xóa</ListItemText>
         </MenuItem>
       </Menu>
+
+      {/* Dialog Thêm tài khoản mới */}
+      <Dialog open={openAddDialog} onClose={handleCloseAddDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Thêm tài khoản mới</DialogTitle>
+        <DialogContent>
+          <Box component="form" sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Họ và tên"
+                  name="name"
+                  value={newUser.name}
+                  onChange={handleInputChange}
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  margin="normal"
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={newUser.email}
+                  onChange={handleInputChange}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                  margin="normal"
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Số điện thoại"
+                  name="phone"
+                  value={newUser.phone}
+                  onChange={handleInputChange}
+                  error={!!errors.phone}
+                  helperText={errors.phone}
+                  margin="normal"
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Mật khẩu"
+                  name="password"
+                  type="password"
+                  value={newUser.password}
+                  onChange={handleInputChange}
+                  error={!!errors.password}
+                  helperText={errors.password}
+                  margin="normal"
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Xác nhận mật khẩu"
+                  name="confirmPassword"
+                  type="password"
+                  value={newUser.confirmPassword}
+                  onChange={handleInputChange}
+                  error={!!errors.confirmPassword}
+                  helperText={errors.confirmPassword}
+                  margin="normal"
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth margin="normal" size="small" error={!!errors.role}>
+                  <InputLabel>Vai trò</InputLabel>
+                  <Select
+                    name="role"
+                    value={newUser.role}
+                    label="Vai trò"
+                    onChange={handleInputChange}
+                  >
+                    <MenuItem value="Quản trị viên">Quản trị viên</MenuItem>
+                    <MenuItem value="Bác sĩ">Bác sĩ</MenuItem>
+                    <MenuItem value="Điều dưỡng">Điều dưỡng</MenuItem>
+                    <MenuItem value="Lễ tân">Lễ tân</MenuItem>
+                  </Select>
+                  {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={vi}>
+                  <DatePicker
+                    label="Ngày sinh"
+                    value={newUser.birthDate}
+                    onChange={(date) => 
+                      setNewUser(prev => ({ ...prev, birthDate: date }))
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        fullWidth
+                        margin="normal"
+                        size="small"
+                        error={!!errors.birthDate}
+                        helperText={errors.birthDate}
+                      />
+                    )}
+                  />
+                </LocalizationProvider>
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl fullWidth margin="normal" size="small">
+                  <InputLabel>Trạng thái</InputLabel>
+                  <Select
+                    name="status"
+                    value={newUser.status}
+                    label="Trạng thái"
+                    onChange={handleInputChange}
+                  >
+                    <MenuItem value="active">Đang hoạt động</MenuItem>
+                    <MenuItem value="inactive">Vô hiệu hóa</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseAddDialog} color="inherit">
+            Hủy
+          </Button>
+          <Button onClick={handleAddUser} color="primary" variant="contained">
+            Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

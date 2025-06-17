@@ -38,6 +38,7 @@ import {
 const mockPatients = [
   {
     id: 1,
+    patientId: 'BN0001',
     name: 'Nguyễn Văn A',
     age: 35,
     gender: 'Nam',
@@ -77,7 +78,15 @@ const MedicalRecords = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openNewRecordDialog, setOpenNewRecordDialog] = useState(false);
   const [view, setView] = useState('patient'); // 'patient' or 'record'
+  const [newRecord, setNewRecord] = useState({
+    date: new Date().toISOString().split('T')[0],
+    diagnosis: '',
+    symptoms: '',
+    treatment: '',
+    notes: ''
+  });
 
 
   const handleChangePage = (event, newPage) => {
@@ -112,11 +121,15 @@ const MedicalRecords = () => {
     setView('patient');
   };
 
-  const filteredPatients = mockPatients.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.phone.includes(searchTerm) ||
-    patient.diagnosis.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPatients = mockPatients.filter(patient => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      patient.name.toLowerCase().includes(searchLower) ||
+      patient.phone.includes(searchTerm) ||
+      patient.diagnosis.toLowerCase().includes(searchLower) ||
+      (patient.patientId && patient.patientId.toLowerCase().includes(searchLower))
+    );
+  });
 
   const navigate = useNavigate();
   
@@ -129,8 +142,59 @@ const MedicalRecords = () => {
           name: patient.name,
           age: patient.age,
           gender: patient.gender
-        }
+        },
+        appointmentId: selectedRecord?.id // Truyền ID lịch hẹn nếu có
       }
+    });
+  };
+
+  const handleCreateNewRecord = () => {
+    // Tạo hồ sơ mới cho bệnh nhân
+    const newRecordEntry = {
+      id: Date.now(),
+      date: newRecord.date,
+      doctor: 'BS. Người dùng hiện tại', // Có thể lấy từ thông tin đăng nhập
+      diagnosis: newRecord.diagnosis,
+      symptoms: newRecord.symptoms,
+      treatment: newRecord.treatment,
+      notes: newRecord.notes
+    };
+
+    // Cập nhật danh sách bệnh nhân với hồ sơ mới
+    const updatedPatients = mockPatients.map(patient => {
+      if (patient.id === selectedPatient.id) {
+        return {
+          ...patient,
+          records: [newRecordEntry, ...patient.records],
+          lastVisit: newRecord.date,
+          diagnosis: newRecord.diagnosis,
+          status: 'Đang điều trị'
+        };
+      }
+      return patient;
+    });
+
+    // Ứng dụng thực tế sẽ gọi API để lưu dữ liệu
+    console.log('Tạo hồ sơ mới:', newRecordEntry);
+    
+    // Đóng dialog và reset form
+    setOpenNewRecordDialog(false);
+    setNewRecord({
+      date: new Date().toISOString().split('T')[0],
+      diagnosis: '',
+      symptoms: '',
+      treatment: '',
+      notes: ''
+    });
+    
+    // Cập nhật UI (trong ứng dụng thực tế sẽ cập nhật từ response của API)
+    // Ở đây chỉ là demo nên dùng mock data
+    setSelectedPatient({
+      ...selectedPatient,
+      records: [newRecordEntry, ...selectedPatient.records],
+      lastVisit: newRecord.date,
+      diagnosis: newRecord.diagnosis,
+      status: 'Đang điều trị'
     });
   };
 
@@ -149,7 +213,7 @@ const MedicalRecords = () => {
           <TextField
             variant="outlined"
             size="small"
-            placeholder="Tìm kiếm bệnh nhân..."
+            placeholder="Tìm theo tên, mã BN hoặc số điện thoại..."
             value={searchTerm}
             onChange={handleSearch}
             InputProps={{
@@ -159,6 +223,7 @@ const MedicalRecords = () => {
                 </InputAdornment>
               ),
             }}
+            helperText="Nhập tên, mã BN (ví dụ: BN0001) hoặc số điện thoại"
           />
         </Box>
 
@@ -167,6 +232,7 @@ const MedicalRecords = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell>Mã BN</TableCell>
                 <TableCell>Họ tên</TableCell>
                 <TableCell>Tuổi/Giới tính</TableCell>
                 <TableCell>Điện thoại</TableCell>
@@ -182,6 +248,7 @@ const MedicalRecords = () => {
                 : filteredPatients
               ).map((patient) => (
                 <TableRow key={patient.id} hover>
+                  <TableCell>{patient.patientId || `BN${patient.id.toString().padStart(4, '0')}`}</TableCell>
                   <TableCell>{patient.name}</TableCell>
                   <TableCell>{patient.age} tuổi / {patient.gender}</TableCell>
                   <TableCell>{patient.phone}</TableCell>
@@ -210,7 +277,7 @@ const MedicalRecords = () => {
               ))}
               {emptyRows > 0 && (
                 <TableRow style={{ height: 53 * emptyRows }}>
-                  <TableCell colSpan={7} />
+                  <TableCell colSpan={8} />
                 </TableRow>
               )}
             </TableBody>
@@ -383,16 +450,89 @@ const MedicalRecords = () => {
               <Button 
                 variant="contained" 
                 color="primary"
-                onClick={() => {
-                  // Xử lý tạo hồ sơ mới
-                  console.log('Tạo hồ sơ mới cho bệnh nhân:', selectedPatient.id);
-                }}
+                onClick={() => setOpenNewRecordDialog(true)}
                 sx={{ ml: 1 }}
               >
                 Tạo hồ sơ mới
               </Button>
             </>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog tạo hồ sơ mới */}
+      <Dialog 
+        open={openNewRecordDialog} 
+        onClose={() => setOpenNewRecordDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Tạo hồ sơ bệnh án mới</DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Ngày khám"
+                type="date"
+                value={newRecord.date}
+                onChange={(e) => setNewRecord({...newRecord, date: e.target.value})}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Triệu chứng"
+                multiline
+                rows={2}
+                value={newRecord.symptoms}
+                onChange={(e) => setNewRecord({...newRecord, symptoms: e.target.value})}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Chẩn đoán"
+                value={newRecord.diagnosis}
+                onChange={(e) => setNewRecord({...newRecord, diagnosis: e.target.value})}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Phác đồ điều trị"
+                multiline
+                rows={3}
+                value={newRecord.treatment}
+                onChange={(e) => setNewRecord({...newRecord, treatment: e.target.value})}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Ghi chú"
+                multiline
+                rows={2}
+                value={newRecord.notes}
+                onChange={(e) => setNewRecord({...newRecord, notes: e.target.value})}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenNewRecordDialog(false)}>Hủy</Button>
+          <Button 
+            onClick={handleCreateNewRecord} 
+            variant="contained" 
+            color="primary"
+            disabled={!newRecord.diagnosis}
+          >
+            Lưu hồ sơ
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card, Button, ButtonGroup } from 'react-bootstrap';
 import { 
     Box, 
@@ -103,6 +103,11 @@ const Dashboard = () => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    
+    // State for filters
+    const [selectedYear, setSelectedYear] = useState(2024);
+    const [selectedQuarter, setSelectedQuarter] = useState(1);
+    const [timeRangeType, setTimeRangeType] = useState('month'); // 'month', 'quarter', 'year'
 
     // Dữ liệu thống kê
     const stats = [{
@@ -140,21 +145,70 @@ const Dashboard = () => {
         }
     ];
 
-    // Dữ liệu biểu đồ cột: Số lượng bệnh nhân theo tháng
-    const [patientData] = useState([
-        { name: "Thg 1", patients: 1250 },
-        { name: "Thg 2", patients: 1890 },
-        { name: "Thg 3", patients: 2100 },
-        { name: "Thg 4", patients: 1780 },
-        { name: "Thg 5", patients: 2450 },
-        { name: "Thg 6", patients: 2780 },
-        { name: "Thg 7", patients: 1890 },
-        { name: "Thg 8", patients: 2300 },
-        { name: "Thg 9", patients: 2500 },
-        { name: "Thg 10", patients: 2100 },
-        { name: "Thg 11", patients: 2350 },
-        { name: "Thg 12", patients: 3000 }
-    ]);
+    // Raw data for all years
+    const [allPatientData] = useState({
+        2023: [
+            { name: "Thg 1", month: 1, patients: 1050 },
+            { name: "Thg 2", month: 2, patients: 1490 },
+            { name: "Thg 3", month: 3, patients: 1800 },
+            { name: "Thg 4", month: 4, patients: 1580 },
+            { name: "Thg 5", month: 5, patients: 2050 },
+            { name: "Thg 6", month: 6, patients: 2280 },
+            { name: "Thg 7", month: 7, patients: 1590 },
+            { name: "Thg 8", month: 8, patients: 2000 },
+            { name: "Thg 9", month: 9, patients: 2300 },
+            { name: "Thg 10", month: 10, patients: 2100 },
+            { name: "Thg 11", month: 11, patients: 2250 },
+            { name: "Thg 12", month: 12, patients: 2800 }
+        ],
+        2024: [
+            { name: "Thg 1", month: 1, patients: 1250 },
+            { name: "Thg 2", month: 2, patients: 1890 },
+            { name: "Thg 3", month: 3, patients: 2100 },
+            { name: "Thg 4", month: 4, patients: 1780 },
+            { name: "Thg 5", month: 5, patients: 2450 },
+            { name: "Thg 6", month: 6, patients: 2780 },
+            { name: "Thg 7", month: 7, patients: 1890 },
+            { name: "Thg 8", month: 8, patients: 2300 },
+            { name: "Thg 9", month: 9, patients: 2500 },
+            { name: "Thg 10", month: 10, patients: 2100 },
+            { name: "Thg 11", month: 11, patients: 2350 },
+            { name: "Thg 12", month: 12, patients: 3000 }
+        ]
+    });
+
+    // Filter patient data based on selected year and quarter
+    const getFilteredPatientData = () => {
+        const yearData = allPatientData[selectedYear] || [];
+        console.log('Filtering data for:', { selectedYear, selectedQuarter, timeRangeType });
+        
+        if (timeRangeType === 'year') {
+            // Show all months of the year
+            return yearData;
+        } else if (timeRangeType === 'quarter' && selectedQuarter) {
+            // Filter by quarter (3 months)
+            const startMonth = (selectedQuarter - 1) * 3 + 1;
+            const filtered = yearData.filter(month => 
+                month.month >= startMonth && month.month < startMonth + 3
+            );
+            console.log('Filtered quarter data:', filtered);
+            return filtered;
+        } else if (timeRangeType === 'month') {
+            // Show all months by default
+            return yearData;
+        }
+        
+        return [];
+    };
+    
+    const patientData = getFilteredPatientData();
+    
+    // Update quarter selection when time range type changes
+    useEffect(() => {
+        if (timeRangeType === 'quarter' && !selectedQuarter) {
+            setSelectedQuarter(1);
+        }
+    }, [timeRangeType, selectedQuarter]);
 
     // Dữ liệu biểu đồ tròn: Tỷ lệ các dịch vụ khám
     const serviceData = [
@@ -165,37 +219,119 @@ const Dashboard = () => {
         { name: "Khác", value: 5, color: "#8884d8" }
     ];
 
-    // Dữ liệu biểu đồ đường: Doanh thu theo tháng
-    const revenueData = [
-        { name: "Thg 1", revenue: 35000000 },
-        { name: "Thg 2", revenue: 28900000 },
-        { name: "Thg 3", revenue: 42500000 },
-        { name: "Thg 4", revenue: 38100000 },
-        { name: "Thg 5", revenue: 45200000 },
-        { name: "Thg 6", revenue: 47800000 },
-        { name: "Thg 7", revenue: 39000000 },
-        { name: "Thg 8", revenue: 51200000 },
-        { name: "Thg 9", revenue: 48700000 },
-        { name: "Thg 10", revenue: 42300000 },
-        { name: "Thg 11", revenue: 46500000 },
-        { name: "Thg 12", revenue: 52000000 }
-    ];
+    // Raw revenue data for all years
+    const [allRevenueData] = useState({
+        2023: [
+            { name: "Thg 1", month: 1, revenue: 30000000 },
+            { name: "Thg 2", month: 2, revenue: 28900000 },
+            { name: "Thg 3", month: 3, revenue: 32500000 },
+            { name: "Thg 4", month: 4, revenue: 35100000 },
+            { name: "Thg 5", month: 5, revenue: 40200000 },
+            { name: "Thg 6", month: 6, revenue: 41800000 },
+            { name: "Thg 7", month: 7, revenue: 39000000 },
+            { name: "Thg 8", month: 8, revenue: 45200000 },
+            { name: "Thg 9", month: 9, revenue: 43700000 },
+            { name: "Thg 10", month: 10, revenue: 40300000 },
+            { name: "Thg 11", month: 11, revenue: 42500000 },
+            { name: "Thg 12", month: 12, revenue: 48000000 }
+        ],
+        2024: [
+            { name: "Thg 1", month: 1, revenue: 35000000 },
+            { name: "Thg 2", month: 2, revenue: 28900000 },
+            { name: "Thg 3", month: 3, revenue: 42500000 },
+            { name: "Thg 4", month: 4, revenue: 38100000 },
+            { name: "Thg 5", month: 5, revenue: 45200000 },
+            { name: "Thg 6", month: 6, revenue: 47800000 },
+            { name: "Thg 7", month: 7, revenue: 39000000 },
+            { name: "Thg 8", month: 8, revenue: 51200000 },
+            { name: "Thg 9", month: 9, revenue: 48700000 },
+            { name: "Thg 10", month: 10, revenue: 42300000 },
+            { name: "Thg 11", month: 11, revenue: 46500000 },
+            { name: "Thg 12", month: 12, revenue: 52000000 }
+        ]
+    });
 
-    // Dữ liệu biểu đồ: Số lượng đơn thuốc đã cấp
-    const prescriptionData = [
-        { name: "Thg 1", prescriptions: 1024 },
-        { name: "Thg 2", prescriptions: 980 },
-        { name: "Thg 3", prescriptions: 1250 },
-        { name: "Thg 4", prescriptions: 1120 },
-        { name: "Thg 5", prescriptions: 1340 },
-        { name: "Thg 6", prescriptions: 1450 },
-        { name: "Thg 7", prescriptions: 1180 },
-        { name: "Thg 8", prescriptions: 1560 },
-        { name: "Thg 9", prescriptions: 1480 },
-        { name: "Thg 10", prescriptions: 1320 },
-        { name: "Thg 11", prescriptions: 1420 },
-        { name: "Thg 12", prescriptions: 1650 }
-    ];
+    // State for revenue chart filter
+    const [revenueYear, setRevenueYear] = useState(2024);
+    const [revenueTimeRange, setRevenueTimeRange] = useState('month');
+    const [revenueQuarter, setRevenueQuarter] = useState(1);
+
+    // Filter revenue data based on selected filters
+    const getFilteredRevenueData = () => {
+        const yearData = allRevenueData[revenueYear] || [];
+        
+        if (revenueTimeRange === 'year') {
+            return yearData;
+        } else if (revenueTimeRange === 'quarter' && revenueQuarter) {
+            const startMonth = (revenueQuarter - 1) * 3 + 1;
+            return yearData.filter(month => 
+                month.month >= startMonth && month.month < startMonth + 3
+            );
+        } else if (revenueTimeRange === 'month') {
+            return yearData;
+        }
+        
+        return [];
+    };
+    
+    const revenueData = getFilteredRevenueData();
+
+    // Raw prescription data for all years
+    const [allPrescriptionData] = useState({
+        2023: [
+            { name: "Thg 1", month: 1, prescriptions: 924 },
+            { name: "Thg 2", month: 2, prescriptions: 880 },
+            { name: "Thg 3", month: 3, prescriptions: 950 },
+            { name: "Thg 4", month: 4, prescriptions: 1020 },
+            { name: "Thg 5", month: 5, prescriptions: 1140 },
+            { name: "Thg 6", month: 6, prescriptions: 1250 },
+            { name: "Thg 7", month: 7, prescriptions: 1080 },
+            { name: "Thg 8", month: 8, prescriptions: 1360 },
+            { name: "Thg 9", month: 9, prescriptions: 1280 },
+            { name: "Thg 10", month: 10, prescriptions: 1220 },
+            { name: "Thg 11", month: 11, prescriptions: 1320 },
+            { name: "Thg 12", month: 12, prescriptions: 1550 }
+        ],
+        2024: [
+            { name: "Thg 1", month: 1, prescriptions: 1024 },
+            { name: "Thg 2", month: 2, prescriptions: 980 },
+            { name: "Thg 3", month: 3, prescriptions: 1250 },
+            { name: "Thg 4", month: 4, prescriptions: 1120 },
+            { name: "Thg 5", month: 5, prescriptions: 1340 },
+            { name: "Thg 6", month: 6, prescriptions: 1450 },
+            { name: "Thg 7", month: 7, prescriptions: 1180 },
+            { name: "Thg 8", month: 8, prescriptions: 1560 },
+            { name: "Thg 9", month: 9, prescriptions: 1480 },
+            { name: "Thg 10", month: 10, prescriptions: 1320 },
+            { name: "Thg 11", month: 11, prescriptions: 1420 },
+            { name: "Thg 12", month: 12, prescriptions: 1650 }
+        ]
+    });
+
+    // State for prescription chart filter
+    const [prescriptionYear, setPrescriptionYear] = useState(2024);
+    const [prescriptionTimeRange, setPrescriptionTimeRange] = useState('month');
+    const [prescriptionQuarter, setPrescriptionQuarter] = useState(1);
+
+    // Filter prescription data based on selected filters
+    const getFilteredPrescriptionData = () => {
+        const yearData = allPrescriptionData[prescriptionYear] || [];
+        
+        if (prescriptionTimeRange === 'year') {
+            return yearData;
+        } else if (prescriptionTimeRange === 'quarter' && prescriptionQuarter) {
+            const startMonth = (prescriptionQuarter - 1) * 3 + 1;
+            return yearData.filter(month => 
+                month.month >= startMonth && month.month < startMonth + 3
+            );
+        } else if (prescriptionTimeRange === 'month') {
+            return yearData;
+        }
+        
+        return [];
+    };
+    
+    const prescriptionData = getFilteredPrescriptionData();
 
     // Custom tooltip cho biểu đồ
     const CustomTooltip = ({ active, payload, label, isMoney = false }) => {
@@ -307,11 +443,81 @@ const Dashboard = () => {
                         <Card.Body>
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h5 className="mb-0 fw-bold">Số lượng bệnh nhân theo tháng</h5>
-                                <ButtonGroup size="sm">
-                                    <Button variant="outline-secondary">Tháng</Button>
-                                    <Button variant="outline-secondary">Quý</Button>
-                                    <Button variant="outline-secondary">Năm</Button>
-                                </ButtonGroup>
+                                <div className="d-flex flex-wrap gap-2 align-items-center">
+                                    <div className="d-flex">
+                                        <ButtonGroup size="sm" className="me-2">
+                                            <Button 
+                                                variant={timeRangeType === 'month' ? 'primary' : 'outline-secondary'}
+                                                onClick={() => {
+                                                    console.log('Month button clicked');
+                                                    setTimeRangeType('month');
+                                                    setSelectedQuarter(1);
+                                                }}
+                                            >
+                                                Tháng
+                                            </Button>
+                                            <Button 
+                                                variant={timeRangeType === 'quarter' ? 'primary' : 'outline-secondary'}
+                                                onClick={() => {
+                                                    console.log('Quarter button clicked');
+                                                    setTimeRangeType('quarter');
+                                                    setSelectedQuarter(selectedQuarter || 1);
+                                                }}
+                                            >
+                                                Quý
+                                            </Button>
+                                            <Button 
+                                                variant={timeRangeType === 'year' ? 'primary' : 'outline-secondary'}
+                                                onClick={() => {
+                                                    console.log('Year button clicked');
+                                                    setTimeRangeType('year');
+                                                    setSelectedQuarter(1);
+                                                }}
+                                            >
+                                                Năm
+                                            </Button>
+                                        </ButtonGroup>
+                                    </div>
+                                    
+                                    {timeRangeType === 'quarter' && (
+                                        <div className="d-flex">
+                                            <ButtonGroup size="sm" className="me-2">
+                                                {[1, 2, 3, 4].map(q => (
+                                                    <Button 
+                                                        key={q} 
+                                                        variant={selectedQuarter === q ? 'primary' : 'outline-secondary'}
+                                                        onClick={() => {
+                                                            console.log('Quarter selected:', q);
+                                                            setSelectedQuarter(q);
+                                                        }}
+                                                    >
+                                                        Q{q}
+                                                    </Button>
+                                                ))}
+                                            </ButtonGroup>
+                                        </div>
+                                    )}
+                                    
+                                    <div className="d-flex">
+                                        <ButtonGroup size="sm">
+                                            {[2023, 2024].map(year => (
+                                                <Button 
+                                                    key={year}
+                                                    variant={selectedYear === year ? 'primary' : 'outline-secondary'}
+                                                    onClick={() => {
+                                                        console.log('Year selected:', year);
+                                                        setSelectedYear(year);
+                                                        if (timeRangeType === 'quarter') {
+                                                            setSelectedQuarter(1);
+                                                        }
+                                                    }}
+                                                >
+                                                    {year}
+                                                </Button>
+                                            ))}
+                                        </ButtonGroup>
+                                    </div>
+                                </div>
                             </div>
                             <div style={{ height: '350px' }}>
                                 <ResponsiveContainer width="100%" height="100%">
@@ -373,13 +579,78 @@ const Dashboard = () => {
                         <Card.Body>
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h5 className="mb-0 fw-bold">Doanh thu theo tháng (VNĐ)</h5>
-                                <div className="d-flex">
-                                    <ButtonGroup size="sm" className="me-2">
-                                        <Button variant="outline-secondary">2024</Button>
-                                        <Button variant="outline-secondary">2023</Button>
-                                    </ButtonGroup>
+                                <div className="d-flex flex-wrap gap-2 align-items-center">
+                                    <div className="d-flex">
+                                        <ButtonGroup size="sm" className="me-2">
+                                            <Button 
+                                                variant={revenueTimeRange === 'month' ? 'primary' : 'outline-secondary'}
+                                                onClick={() => {
+                                                    setRevenueTimeRange('month');
+                                                    setRevenueQuarter(1);
+                                                }}
+                                            >
+                                                Tháng
+                                            </Button>
+                                            <Button 
+                                                variant={revenueTimeRange === 'quarter' ? 'primary' : 'outline-secondary'}
+                                                onClick={() => {
+                                                    setRevenueTimeRange('quarter');
+                                                    setRevenueQuarter(revenueQuarter || 1);
+                                                }}
+                                            >
+                                                Quý
+                                            </Button>
+                                            <Button 
+                                                variant={revenueTimeRange === 'year' ? 'primary' : 'outline-secondary'}
+                                                onClick={() => {
+                                                    setRevenueTimeRange('year');
+                                                    setRevenueQuarter(1);
+                                                }}
+                                            >
+                                                Năm
+                                            </Button>
+                                        </ButtonGroup>
+                                    </div>
+                                    
+                                    {revenueTimeRange === 'quarter' && (
+                                        <div className="d-flex">
+                                            <ButtonGroup size="sm" className="me-2">
+                                                {[1, 2, 3, 4].map(q => (
+                                                    <Button 
+                                                        key={q} 
+                                                        variant={revenueQuarter === q ? 'primary' : 'outline-secondary'}
+                                                        onClick={() => setRevenueQuarter(q)}
+                                                    >
+                                                        Q{q}
+                                                    </Button>
+                                                ))}
+                                            </ButtonGroup>
+                                        </div>
+                                    )}
+                                    
+                                    <div className="d-flex">
+                                        <ButtonGroup size="sm" className="me-2">
+                                            {[2023, 2024].map(year => (
+                                                <Button 
+                                                    key={year}
+                                                    variant={revenueYear === year ? 'primary' : 'outline-secondary'}
+                                                    onClick={() => {
+                                                        setRevenueYear(year);
+                                                        if (revenueTimeRange === 'quarter') {
+                                                            setRevenueQuarter(1);
+                                                        }
+                                                    }}
+                                                >
+                                                    {year}
+                                                </Button>
+                                            ))}
+                                        </ButtonGroup>
+                                    </div>
+                                    
                                     <ButtonGroup size="sm">
-                                        <Button variant="outline-secondary">Xuất Excel</Button>
+                                        <Button variant="outline-secondary">
+                                            <i className="fas fa-file-export me-1"></i> Xuất Excel
+                                        </Button>
                                     </ButtonGroup>
                                 </div>
                             </div>
@@ -426,13 +697,78 @@ const Dashboard = () => {
                         <Card.Body>
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h5 className="mb-0 fw-bold">Số lượng đơn thuốc đã cấp</h5>
-                                <div className="d-flex">
-                                    <ButtonGroup size="sm" className="me-2">
-                                        <Button variant="outline-secondary">2024</Button>
-                                        <Button variant="outline-secondary">2023</Button>
-                                    </ButtonGroup>
+                                <div className="d-flex flex-wrap gap-2 align-items-center">
+                                    <div className="d-flex">
+                                        <ButtonGroup size="sm" className="me-2">
+                                            <Button 
+                                                variant={prescriptionTimeRange === 'month' ? 'primary' : 'outline-secondary'}
+                                                onClick={() => {
+                                                    setPrescriptionTimeRange('month');
+                                                    setPrescriptionQuarter(1);
+                                                }}
+                                            >
+                                                Tháng
+                                            </Button>
+                                            <Button 
+                                                variant={prescriptionTimeRange === 'quarter' ? 'primary' : 'outline-secondary'}
+                                                onClick={() => {
+                                                    setPrescriptionTimeRange('quarter');
+                                                    setPrescriptionQuarter(prescriptionQuarter || 1);
+                                                }}
+                                            >
+                                                Quý
+                                            </Button>
+                                            <Button 
+                                                variant={prescriptionTimeRange === 'year' ? 'primary' : 'outline-secondary'}
+                                                onClick={() => {
+                                                    setPrescriptionTimeRange('year');
+                                                    setPrescriptionQuarter(1);
+                                                }}
+                                            >
+                                                Năm
+                                            </Button>
+                                        </ButtonGroup>
+                                    </div>
+                                    
+                                    {prescriptionTimeRange === 'quarter' && (
+                                        <div className="d-flex">
+                                            <ButtonGroup size="sm" className="me-2">
+                                                {[1, 2, 3, 4].map(q => (
+                                                    <Button 
+                                                        key={q} 
+                                                        variant={prescriptionQuarter === q ? 'primary' : 'outline-secondary'}
+                                                        onClick={() => setPrescriptionQuarter(q)}
+                                                    >
+                                                        Q{q}
+                                                    </Button>
+                                                ))}
+                                            </ButtonGroup>
+                                        </div>
+                                    )}
+                                    
+                                    <div className="d-flex">
+                                        <ButtonGroup size="sm" className="me-2">
+                                            {[2023, 2024].map(year => (
+                                                <Button 
+                                                    key={year}
+                                                    variant={prescriptionYear === year ? 'primary' : 'outline-secondary'}
+                                                    onClick={() => {
+                                                        setPrescriptionYear(year);
+                                                        if (prescriptionTimeRange === 'quarter') {
+                                                            setPrescriptionQuarter(1);
+                                                        }
+                                                    }}
+                                                >
+                                                    {year}
+                                                </Button>
+                                            ))}
+                                        </ButtonGroup>
+                                    </div>
+                                    
                                     <ButtonGroup size="sm">
-                                        <Button variant="outline-secondary">Xuất Excel</Button>
+                                        <Button variant="outline-secondary">
+                                            <i className="fas fa-file-export me-1"></i> Xuất Excel
+                                        </Button>
                                     </ButtonGroup>
                                 </div>
                             </div>

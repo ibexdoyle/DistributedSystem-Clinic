@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { vi } from 'date-fns/locale';
 import { 
   Container, 
   Typography, 
@@ -47,6 +46,8 @@ import {
   MedicalServices as MedicalServicesIcon
 } from '@mui/icons-material';
 import { format, parseISO, isBefore, isAfter, addDays } from 'date-fns';
+import { Helmet } from 'react-helmet-async';
+import Stack from '@mui/material/Stack';
 import { getAppointmentsByPatient, getAllAppointments, cancelAppointment } from '../mock/appointmentsDB';
 
 // Hàm hỗ trợ cho accessibility của các tab
@@ -94,8 +95,8 @@ const MyAppointments = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [patientInfo, setPatientInfo] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [reasonError, setReasonError] = useState('');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -128,19 +129,25 @@ const MyAppointments = () => {
 
   const handleDetailClick = (appointment) => {
     setSelectedAppointment(appointment);
-    // Không cần lấy từ localStorage nữa vì đã có trong appointment
     setDetailOpen(true);
   };
 
   const handleCancelClick = (appointment) => {
     setSelectedAppointment(appointment);
+    setReasonError('');
     setCancelOpen(true);
   };
 
   const handleConfirmCancel = (reason) => {
+    if (!reason || !reason.trim()) {
+      setReasonError('Vui lòng nhập lý do hủy lịch');
+      return;
+    }
+    
     if (selectedAppointment) {
       cancelAppointment(selectedAppointment.id, reason);
       setAppointments(getAppointmentsByPatient(username));
+      setCancelOpen(false);
       setSnackbar({
         open: true,
         message: 'Đã hủy lịch hẹn thành công',
@@ -281,10 +288,10 @@ const MyAppointments = () => {
                     <>
                       <EventBusyIcon color="disabled" sx={{ fontSize: 48, mb: 2 }} />
                       <Typography variant="h6" color="text.secondary" gutterBottom>
-                        Chưa có lịch sử khám bệnh
+                        Chưa có lịch sử
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Lịch sử khám bệnh và lịch đã hủy sẽ hiển thị tại đây.
+                        Các lịch khám đã kết thúc sẽ hiển thị tại đây.
                       </Typography>
                     </>
                   )}
@@ -298,223 +305,222 @@ const MyAppointments = () => {
   );
 
   return (
-    <Container maxWidth="md" sx={{ mt: 6, mb: 6 }}>
-      <Paper elevation={6} sx={{ p: { xs: 2, md: 4 } }}>
-        <Box display="flex" alignItems="center" mb={2}>
-          <CalendarMonthIcon color="primary" sx={{ fontSize: 36, mr: 1 }} />
-          <Typography variant="h5" fontWeight={700}>Lịch khám của tôi</Typography>
-        </Box>
-        
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs 
-            value={tabValue} 
-            onChange={handleTabChange}
-            aria-label="appointment tabs" 
-            variant="fullWidth"
-            textColor="primary"
-            indicatorColor="primary"
-          >
-            <Tab 
-              icon={<EventAvailableIcon />} 
-              iconPosition="start"
-              label={`Sắp đến (${upcomingAppointments.length})`} 
-              id="upcoming-tab" 
-              aria-controls="upcoming-tabpanel"
-              {...a11yProps(0)}
-            />
-            <Tab 
-              icon={<EventBusyIcon />} 
-              iconPosition="start"
-              label={`Lịch sử (${pastAppointments.length})`} 
-              id="past-tab" 
-              aria-controls="past-tabpanel"
-              {...a11yProps(1)}
-            />
-          </Tabs>
-        </Box>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" my={4}>
-            <CircularProgress />
+    <Box>
+      <Helmet>
+        <title>Quản lý lịch khám | Hệ thống phòng khám</title>
+      </Helmet>
+      <Container maxWidth="xl">
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+          <Typography variant="h4" gutterBottom>
+            Quản lý lịch khám
+          </Typography>
+        </Stack>
+        <Paper elevation={6} sx={{ p: { xs: 2, md: 4 } }}>
+          <Box display="flex" alignItems="center" mb={2}>
+            <CalendarMonthIcon color="primary" sx={{ fontSize: 36, mr: 1 }} />
           </Box>
-        ) : (
-          <>
-            <TabPanel value={tabValue} index={0}>
-              {renderAppointmentsTable(upcomingAppointments)}
-            </TabPanel>
-            <TabPanel value={tabValue} index={1}>
-              {renderAppointmentsTable(pastAppointments)}
-            </TabPanel>
-          </>
-        )}
-      </Paper>
-
-      {/* Dialog xem chi tiết */}
-      <Dialog open={detailOpen} onClose={handleCloseDetail} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box display="flex" alignItems="center">
-            <MedicalServicesIcon color="primary" sx={{ mr: 1 }} />
-            <Typography variant="h6">Chi tiết lịch hẹn</Typography>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs 
+              value={tabValue} 
+              onChange={handleTabChange}
+              aria-label="appointment tabs" 
+              variant="fullWidth"
+              textColor="primary"
+              indicatorColor="primary"
+            >
+              <Tab 
+                icon={<EventAvailableIcon />} 
+                iconPosition="start"
+                label={`Sắp đến (${upcomingAppointments.length})`} 
+                id="upcoming-tab" 
+                aria-controls="upcoming-tabpanel"
+                {...a11yProps(0)}
+              />
+              <Tab 
+                icon={<EventBusyIcon />} 
+                iconPosition="start"
+                label={`Kết thúc (${pastAppointments.length})`} 
+                id="past-tab" 
+                aria-controls="past-tabpanel"
+                {...a11yProps(1)}
+              />
+            </Tabs>
           </Box>
-          <IconButton onClick={handleCloseDetail} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {selectedAppointment && (
-            <Box>
-              <Box display="flex" alignItems="center" mb={2}>
-                <LocalHospitalIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6" color="primary">
-                  {selectedAppointment.specialty}
-                </Typography>
-              </Box>
-              
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} md={4}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    Họ tên
+
+          {loading ? (
+            <Box display="flex" justifyContent="center" my={4}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              <TabPanel value={tabValue} index={0}>
+                {renderAppointmentsTable(upcomingAppointments)}
+              </TabPanel>
+              <TabPanel value={tabValue} index={1}>
+                {renderAppointmentsTable(pastAppointments)}
+              </TabPanel>
+            </>
+          )}
+        </Paper>
+
+        {/* Dialog xem chi tiết */}
+        <Dialog open={detailOpen} onClose={handleCloseDetail} maxWidth="md" fullWidth>
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box display="flex" alignItems="center">
+              <MedicalServicesIcon color="primary" sx={{ mr: 1 }} />
+              <Typography variant="h6">Chi tiết lịch hẹn</Typography>
+            </Box>
+            <IconButton onClick={handleCloseDetail} size="small">
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            {selectedAppointment && (
+              <Box>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <LocalHospitalIcon color="primary" sx={{ mr: 1 }} />
+                  <Typography variant="h6" color="primary">
+                    {selectedAppointment.specialty}
                   </Typography>
-                  <Typography variant="body1">
-                    {selectedAppointment.patientName || '--'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    Ngày sinh
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedAppointment.patientDob ? format(new Date(selectedAppointment.patientDob), 'dd/MM/yyyy') : '--'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    Giới tính
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedAppointment.patientGender === 'male' ? 'Nam' : selectedAppointment.patientGender === 'female' ? 'Nữ' : '--'}
-                  </Typography>
-                </Grid>
-              </Grid>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Box mb={2}>
-                    <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                      <AccessTimeIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                      Thời gian hẹn
-                    </Typography>
-                    <Typography variant="body1">
-                      {format(parseISO(selectedAppointment.date), 'EEEE, dd/MM/yyyy', { locale: vi })}
-                    </Typography>
-                    <Typography variant="body1">
-                      Giờ khám dự kiến: {selectedAppointment.time.replace(' - ', ' - ')}
-                    </Typography>
-                  </Box>
-                  
-                  <Box mb={2}>
-                    <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                      <PersonIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                      Bác sĩ
-                    </Typography>
-                    <Typography variant="body1">
-                      {selectedAppointment.doctorName}
-                      {/* {selectedAppointment.doctorPhone && (
-                        <Typography component="span" variant="body2" color="textSecondary" sx={{ ml: 1 }}>
-                          ({selectedAppointment.doctorPhone})
-                        </Typography>
-                      )} */}
-                    </Typography>
-                  </Box>
-                </Grid>
+                </Box>
                 
-                {/* <Grid item xs={12} md={6}>
-                  <Box mb={2}>
-                    <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                      <NotesIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                      Ghi chú
-                    </Typography>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                      {selectedAppointment.note || 'Không có ghi chú'}
-                    </Typography>
-                  </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Box mb={2}>
+                      <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                        <AccessTimeIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                        Thời gian hẹn
+                      </Typography>
+                      <Typography variant="body1">
+                        {format(parseISO(selectedAppointment.date), 'EEEE, dd/MM/yyyy')} • {selectedAppointment.time}
+                      </Typography>
+                    </Box>
+                    
+                    <Box mb={2}>
+                      <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                        <PersonIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                        Bác sĩ
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedAppointment.doctorName}
+                        {selectedAppointment.doctorPhone && (
+                          <Typography component="span" variant="body2" color="textSecondary" sx={{ ml: 1 }}>
+                            ({selectedAppointment.doctorPhone})
+                          </Typography>
+                        )}
+                      </Typography>
+                    </Box>
+                  </Grid>
                   
-                  {selectedAppointment.symptoms && (
+                  <Grid item xs={12} md={6}>
                     <Box mb={2}>
                       <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                         <NotesIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                        Triệu chứng
+                        Ghi chú
                       </Typography>
                       <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                        {selectedAppointment.symptoms}
+                        {selectedAppointment.note || 'Không có ghi chú'}
                       </Typography>
                     </Box>
-                  )}
-                </Grid> */}
-              </Grid>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCloseDetail} color="primary" variant="outlined">
-            Đóng
-          </Button>
-        </DialogActions>
-      </Dialog>
+                    
+                    {selectedAppointment.symptoms && (
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                          <NotesIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                          Triệu chứng
+                        </Typography>
+                        <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                          {selectedAppointment.symptoms}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleCloseDetail} color="primary" variant="outlined">
+              Đóng
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      {/* Dialog xác nhận hủy lịch */}
-      <Dialog open={cancelOpen} onClose={handleCloseCancel} maxWidth="sm" fullWidth>
-        <DialogTitle>Xác nhận hủy lịch hẹn</DialogTitle>
-        <DialogContent>
-          <DialogContentText gutterBottom>
-            Bạn có chắc chắn muốn hủy lịch hẹn {selectedAppointment?.specialty} với {selectedAppointment?.doctorName} 
-            vào ngày {selectedAppointment?.date} lúc {selectedAppointment?.time}?
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="reason"
-            label="Lý do hủy lịch (không bắt buộc)"
-            type="text"
-            fullWidth
-            variant="outlined"
-            multiline
-            rows={3}
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCloseCancel} color="inherit">
-            Hủy bỏ
-          </Button>
-          <Button 
-            onClick={() => {
-              const reason = document.getElementById('reason').value || 'Không có lý do';
-              handleConfirmCancel(reason);
-              handleCloseCancel();
-            }} 
-            color="error"
-            variant="contained"
-          >
-            Xác nhận hủy
-          </Button>
-        </DialogActions>
-      </Dialog>
+        {/* Dialog xác nhận hủy lịch */}
+        <Dialog 
+          open={cancelOpen} 
+          onClose={handleCloseCancel} 
+          maxWidth="sm" 
+          fullWidth
+          disableEscapeKeyDown
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            Xác nhận hủy lịch hẹn
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Bạn có chắc chắn muốn hủy lịch hẹn <strong>{selectedAppointment?.specialty}</strong> với <strong>{selectedAppointment?.doctorName}</strong> 
+              vào ngày <strong>{selectedAppointment?.date} lúc {selectedAppointment?.time}</strong>?
+              <br />
+              <br />
+              Vui lòng nhập lý do hủy lịch của bạn:
+            </DialogContentText>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="reason"
+              label="Lý do hủy lịch"
+              type="text"
+              fullWidth
+              variant="outlined"
+              multiline
+              rows={3}
+              required
+              sx={{ mt: 2 }}
+              error={!!reasonError}
+              helperText={reasonError || ' '}
+              inputProps={{
+                'aria-label': 'Nhập lý do hủy lịch'
+              }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 2, justifyContent: 'flex-end' }}>
+            <Button 
+              onClick={handleCloseCancel} 
+              color="inherit"
+              sx={{ mr: 2 }}
+            >
+              Hủy bỏ
+            </Button>
+            <Button 
+              onClick={() => {
+                const reason = document.getElementById('reason').value;
+                handleConfirmCancel(reason);
+              }} 
+              color="error"
+              variant="contained"
+              autoFocus
+            >
+              Xác nhận hủy
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      {/* Thông báo */}
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={6000} 
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+        {/* Thông báo */}
+        <Snackbar 
+          open={snackbar.open} 
+          autoHideDuration={6000} 
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Container>
+    </Box>
   );
 };
 

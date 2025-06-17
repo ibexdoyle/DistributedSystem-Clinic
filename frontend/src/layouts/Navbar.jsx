@@ -59,7 +59,7 @@ const menuItemsByRole = {
       icon: <EventAvailableIcon fontSize="small" />
     },
     {
-      label: "Lịch sử khám",
+      label: "Quản lý lịch khám",
       path: "/my-appointments",
       icon: <HistoryIcon fontSize="small" />
     },
@@ -71,7 +71,7 @@ const menuItemsByRole = {
   ],
   doctor: [
     {
-      label: "Quản lý lịch khám",
+      label: "Quản lý lịch hẹn",
       path: "/appointments",
       icon: <EventAvailableIcon fontSize="small" />
     },
@@ -431,7 +431,7 @@ const Navbar = () => {
                     elevation: 3,
                     sx: {
                       mt: 1.5,
-                      width: 350,
+                      width: 380,
                       maxWidth: "100%",
                       "& .MuiAvatar-root": {
                         width: 32,
@@ -444,16 +444,30 @@ const Navbar = () => {
                   transformOrigin={{ horizontal: "right", vertical: "top" }}
                   anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
                 >
-                  <MenuItem disabled>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
                       Thông báo mới
                     </Typography>
-                  </MenuItem>
+                    <Button 
+                      size="small" 
+                      onClick={() => {
+                        // Mark all as read logic here
+                        setHasNewNotifications(false);
+                      }}
+                      sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                    >
+                      Đánh dấu đã đọc
+                    </Button>
+                  </Box>
                   <Divider />
                   <MenuItem
                     component={Link}
-                    to="/notifications"
-                    onClick={handleNotificationClose}
+                    to="/my-appointments"
+                    onClick={() => {
+                      handleNotificationClose();
+                      setHasNewNotifications(false);
+                    }}
+                    sx={{ py: 1.5 }}
                   >
                     <ListItemIcon>
                       <EventAvailableIcon color="primary" />
@@ -461,12 +475,18 @@ const Navbar = () => {
                     <ListItemText
                       primary="Lịch hẹn mới vào 14:00 ngày 25/05"
                       secondary="2 giờ trước"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                      secondaryTypographyProps={{ variant: 'caption' }}
                     />
                   </MenuItem>
                   <MenuItem
                     component={Link}
-                    to="/medical-records"
-                    onClick={handleNotificationClose}
+                    to="/my-appointments"
+                    onClick={() => {
+                      handleNotificationClose();
+                      setHasNewNotifications(false);
+                    }}
+                    sx={{ py: 1.5 }}
                   >
                     <ListItemIcon>
                       <MedicalInformationIcon color="primary" />
@@ -474,18 +494,27 @@ const Navbar = () => {
                     <ListItemText
                       primary="Kết quả xét nghiệm đã có"
                       secondary="Hôm qua"
+                      primaryTypographyProps={{ variant: 'body2' }}
+                      secondaryTypographyProps={{ variant: 'caption' }}
                     />
                   </MenuItem>
                   <Divider />
                   <MenuItem
                     component={Link}
-                    to="/notifications"
-                    onClick={handleNotificationClose}
+                    to="/my-appointments"
+                    onClick={() => {
+                      handleNotificationClose();
+                      setHasNewNotifications(false);
+                    }}
+                    sx={{ justifyContent: 'center' }}
                   >
-                    <ListItemText
-                      primary="Xem tất cả thông báo"
-                      sx={{ textAlign: "center", color: "primary.main" }}
-                    />
+                    <Typography 
+                      variant="body2" 
+                      color="primary"
+                      sx={{ fontWeight: 500 }}
+                    >
+                      Xem tất cả thông báo
+                    </Typography>
                   </MenuItem>
                 </Menu>
               </Box>

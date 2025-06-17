@@ -20,6 +20,7 @@ import {
   useMediaQuery
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../layouts/Navbar';
@@ -29,56 +30,84 @@ const doctors = [
     name: 'BS. Nguyễn Văn A',
     specialty: 'Chuyên khoa Răng Hàm Mặt',
     experience: '15 năm kinh nghiệm',
-    image: '/assets/bs1.png',
+    image: require('../assets/bs1.png'),
     alt: 'Bác sĩ Nguyễn Văn A',
   },
   {
     name: 'BS. Trần Thị B',
     specialty: 'Chuyên viên chỉnh nha',
     experience: '10 năm kinh nghiệm',
-    image: '/assets/bs2.jpg',
+    image: require('../assets/bs2.jpg'),
     alt: 'Bác sĩ Trần Thị B',
   },
   {
     name: 'BS. Lê Văn C',
     specialty: 'Chuyên viên phục hình răng',
     experience: '12 năm kinh nghiệm',
-    image: '/assets/bs3.jpg',
+    image: require('../assets/bs3.jpg'),
     alt: 'Bác sĩ Lê Văn C',
   },
   {
     name: 'BS. Phạm Thị D',
     specialty: 'Chuyên viên nha chu',
     experience: '8 năm kinh nghiệm',
-    image: '/assets/bs4.png',
+    image: require('../assets/bs4.jpg'),
     alt: 'Bác sĩ Phạm Thị D',
   },
   {
     name: 'BS. Nguyễn Văn E',
     specialty: 'Chuyên khoa Răng Hàm Mặt',
     experience: '9 năm kinh nghiệm',
-    image: '/assets/bs5.jpg',
+    image: require('../assets/bs5.png'),
     alt: 'Bác sĩ Nguyễn Văn E',
   },
   {
     name: 'BS. Trần Thị F',
     specialty: 'Chuyên viên chỉnh nha',
     experience: '11 năm kinh nghiệm',
-    image: '/assets/bs6.jpg',
+    image: require('../assets/bs6.jpg'),
     alt: 'Bác sĩ Trần Thị F',
   },
   {
     name: 'BS. Lê Văn G',
     specialty: 'Chuyên viên phục hình răng',
     experience: '7 năm kinh nghiệm',
-    image: '/assets/bs7.jpg',
+    image: require('../assets/bs7.jpg'),
     alt: 'Bác sĩ Lê Văn G',
   },
   {
     name: 'BS. Phạm Thị H',
     specialty: 'Chuyên viên nha chu',
     experience: '14 năm kinh nghiệm',
-    image: '/assets/bs8.jpg',
+    image: require('../assets/bs8.jpg'),
+    alt: 'Bác sĩ Phạm Thị H',
+  },
+  {
+    name: 'BS.CK1. Phạm Thị H',
+    specialty: 'Chuyên khoa 1 Nhi - Dinh dưỡng',
+    experience: '14 năm kinh nghiệm',
+    image: require('../assets/bs9.jpg'),
+    alt: 'Bác sĩ Phạm Thị H',
+  },
+  {
+    name: 'GS.TS.BS. Trần Văn G',
+    specialty: 'Chuyên khoa 2 Thần kinh - Đột quỵ',
+    experience: '14 năm kinh nghiệm',
+    image: require('../assets/bs10.jpg'),
+    alt: 'Bác sĩ Phạm Thị H',
+  },
+  {
+    name: 'BS. Phạm Thị P hfj',
+    specialty: 'Chuyên viên nha chu',
+    experience: '14 năm kinh nghiệm',
+    image: require('../assets/bs11.jpg'),
+    alt: 'Bác sĩ Phạm Thị H',
+  },
+  {
+    name: 'BS. Phạm Thị JJN',
+    specialty: 'Chuyên khoa 1 Tai Mũi Họng',
+    experience: '14 năm kinh nghiệm',
+    image: require('../assets/bs12.jpg'),
     alt: 'Bác sĩ Phạm Thị H',
   },
 ];
@@ -197,23 +226,35 @@ const Doctors = () => {
         />
       </Box>
 
-      <Grid container spacing={4} sx={{ mb: 4 }}>
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: 'repeat(2, 1fr)',
+          md: 'repeat(3, 1fr)',
+          lg: 'repeat(4, 1fr)'
+        },
+        gap: 3,
+        width: '100%'
+      }}>
         {currentDoctors.map((doctor, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index} sx={{ display: 'flex' }}>
+          <Box key={index} sx={{ display: 'flex' }}>
             <Card 
               elevation={3}
               sx={{
-                height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: theme.shadows[6],
-                },
                 width: '100%',
-                position: 'relative',
-                overflow: 'hidden'
+                height: '100%',
+                transition: 'all 0.3s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                },
+                borderRadius: '12px',
+                overflow: 'hidden',
+                // Sử dụng flex để các card có cùng chiều cao
+                flex: '1 0 auto'
               }}
             >
               {/* Image Container with Fixed Aspect Ratio */}
@@ -222,7 +263,7 @@ const Doctors = () => {
                   width: '100%',
                   paddingTop: '100%', // 1:1 aspect ratio
                   position: 'relative',
-                  backgroundColor: '#f5f5f5', // Light gray background while loading
+                  backgroundColor: '#f8f9fa',
                   overflow: 'hidden'
                 }}
               >
@@ -246,93 +287,133 @@ const Doctors = () => {
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    transition: 'opacity 0.3s ease-in-out',
-                    opacity: 0
+                    transition: 'all 0.5s ease',
+                    opacity: 0,
+                    '&:hover': {
+                      transform: 'scale(1.05)'
+                    }
                   }}
                 />
               </Box>
+              
+              {/* Card Content */}
               <CardContent sx={{ 
-                flexGrow: 1, 
-                p: 3, 
-                textAlign: 'center',
+                p: 3,
+                flex: '1 0 auto',
                 display: 'flex',
                 flexDirection: 'column',
-                height: 'calc(100% - 100px)', // Adjust based on your needs
-                minHeight: '180px' // Ensure minimum height for consistency
+                // Sử dụng flex để phân bổ không gian
+                '& > *:not(:last-child)': {
+                  mb: 2
+                }
               }}>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" component="h3" sx={{
-                    fontWeight: 600,
+                {/* Doctor Name */}
+                <Typography 
+                  variant="h6" 
+                  component="h3" 
+                  sx={{
+                    fontWeight: 700,
                     color: 'text.primary',
-                    mb: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 1,
-                    WebkitBoxOrient: 'vertical',
-                    lineHeight: 1.4,
-                    minHeight: '1.4em' // Ensure consistent height for one line
-                  }}>
-                    {doctor.name}
-                  </Typography>
-                  <Typography variant="subtitle2" color="primary" sx={{
-                    fontWeight: 500,
-                    mb: 1,
-                    minHeight: '2.5em',
+                    textAlign: 'center',
+                    minHeight: '3em',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    lineHeight: 1.2,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical'
-                  }}>
-                    {doctor.specialty}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{
-                    mb: 2,
+                    '& > *': {
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      lineHeight: 1.4
+                    }
+                  }}
+                >
+                  {doctor.name}
+                </Typography>
+                
+                {/* Specialty */}
+                <Typography 
+                  variant="subtitle1" 
+                  color="primary" 
+                  sx={{
+                    fontWeight: 600,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 0.5,
-                    minHeight: '1.5em' // Ensure consistent height
-                  }}>
+                    textAlign: 'center',
+                    color: theme.palette.primary.main,
+                    minHeight: '4em',
+                    '& > *': {
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      lineHeight: 1.3
+                    }
+                  }}
+                >
+                  {doctor.specialty}
+                </Typography>
+                
+                {/* Experience */}
+                <Box sx={{ 
+                  mt: 'auto',
+                  pt: 2,
+                  borderTop: '1px solid #f0f0f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1
+                }}>
+                  <AccessTimeIcon fontSize="small" color="action" />
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{
+                      fontSize: '0.875rem',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '100%'
+                    }}
+                  >
                     {doctor.experience}
                   </Typography>
                 </Box>
-                <CardActions sx={{ 
-                  justifyContent: 'center', 
-                  p: 0, 
-                  mt: 'auto',
-                  pt: 1,
-                  '& .MuiButton-root': {
-                    width: '100%',
-                    borderRadius: '50px',
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    py: 1,
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    '&:hover': {
-                      boxShadow: '0 6px 10px rgba(0,0,0,0.15)',
-                      transform: 'translateY(-1px)'
-                    }
-                  }
-                }}>
+                
+                {/* Book Button */}
+                <Box sx={{ mt: 3, width: '100%' }}>
                   <Button
+                    fullWidth
                     variant="contained"
                     color="primary"
+                    size="medium"
                     onClick={() => handleBookAppointment(doctor)}
+                    disabled={!isPatient && !isGuest}
+                    sx={{
+                      py: 1,
+                      borderRadius: '8px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.9375rem',
+                      boxShadow: 'none',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        transform: 'translateY(-1px)'
+                      },
+                      transition: 'all 0.2s ease-in-out'
+                    }}
                   >
-                    ĐẶT LỊCH KHÁM
+                    {isGuest ? 'Đăng nhập để đặt lịch' : 'Đặt lịch hẹn'}
                   </Button>
-                </CardActions>
+                </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
       {/* Pagination */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 4 }}>

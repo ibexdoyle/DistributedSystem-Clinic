@@ -1,6 +1,7 @@
 import React from 'react';
-import { Container, Typography, Box, Button, Grid, Paper, Card, CardContent, styled } from '@mui/material';
+import { Container, Typography, Box, Button, Grid, Paper, Card, CardContent, styled, IconButton, Avatar, Divider } from '@mui/material';
 import { Link } from 'react-router-dom';
+import EastIcon from '@mui/icons-material/East';
 import { LocalHospital as LocalHospitalIcon, Groups as GroupsIcon, Person as PersonIcon, Star as StarIcon, StarBorder as StarBorderIcon, MedicalServices as MedicalServicesIcon, MedicalInformation as MedicalInformationIcon, SupportAgent as SupportAgentIcon, Language as LanguageIcon } from '@mui/icons-material';
 import BannerSlider from '../components/BannerSlider';
 
@@ -13,9 +14,9 @@ const Home = () => {
     const defaultBanner = require('../assets/banner_1.jpg');
 
     // Định nghĩa các ảnh sẽ sử dụng, thay thế bằng ảnh mặc định nếu không tìm thấy
-    const bs1 = require('../assets/bs1.png');
-    const bs2 = require('../assets/bs2.jpg');
-    const bs3 = require('../assets/bs3.jpg');
+    const bs1 = require('../assets/bs5.png');
+    const bs2 = require('../assets/bs6.jpg');
+    const bs3 = require('../assets/bs7.jpg');
     const congnghe1 = require('../assets/congnghe1.jpg');
     const congnghe2 = require('../assets/congnghe2.jpg');
     const congnghe3 = require('../assets/congnghe3.jpg');
@@ -181,78 +182,78 @@ const Home = () => {
         /Box>
 
         { /* Các thẻ dịch vụ */ } <
-        Container maxWidth = "lg"
-        sx = {
-            { mt: -6, position: 'relative', zIndex: 1 } } >
-        <
-        Grid container spacing = { 3 }
-        justifyContent = "center" > {
-            bannerData.services.map((service) => ( <
-                Grid item xs = { 12 }
-                sm = { 6 }
-                md = { 3 }
-                key = { service.id } >
-                <
-                Card sx = {
-                    {
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        textAlign: 'center',
-                        p: 3,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                        borderTop: `4px solid ${service.color}`,
-                        transition: 'transform 0.3s',
-                        '&:hover': {
-                            transform: 'translateY(-5px)'
-                        }
-                    }
-                } >
-                <
-                Box sx = {
-                    {
-                        width: 60,
-                        height: 60,
-                        borderRadius: '50%',
-                        backgroundColor: `${service.color}20`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 2
-                    }
-                } >
-                <
-                img src = { service.icon }
-                alt = { service.title }
-                style = {
-                    {
-                        width: 32,
-                        height: 32,
-                        objectFit: 'contain'
-                    }
-                }
-                /> <
-                /Box> <
-                Typography variant = "h6"
-                component = "h3"
-                sx = {
-                    {
-                        fontWeight: 'bold',
-                        mb: 1,
-                        color: '#333'
-                    }
-                } > { service.title } <
-                /Typography> <
-                Typography variant = "body2"
-                color = "text.secondary" > { service.description } <
-                /Typography> <
-                /Card> <
-                /Grid>
-            ))
-        } <
-        /Grid> <
-        /Container> <
+        // Container maxWidth = "lg"
+        // sx = {
+        //     { mt: -6, position: 'relative', zIndex: 1 } } >
+        // <
+        // Grid container spacing = { 3 }
+        // justifyContent = "center" > {
+        //     bannerData.services.map((service) => ( <
+        //         Grid item xs = { 12 }
+        //         sm = { 6 }
+        //         md = { 3 }
+        //         key = { service.id } >
+        //         <
+        //         Card sx = {
+        //             {
+        //                 height: '100%',
+        //                 display: 'flex',
+        //                 flexDirection: 'column',
+        //                 alignItems: 'center',
+        //                 textAlign: 'center',
+        //                 p: 3,
+        //                 boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+        //                 borderTop: `4px solid ${service.color}`,
+        //                 transition: 'transform 0.3s',
+        //                 '&:hover': {
+        //                     transform: 'translateY(-5px)'
+        //                 }
+        //             }
+        //         } >
+        //         <
+        //         Box sx = {
+        //             {
+        //                 width: 60,
+        //                 height: 60,
+        //                 borderRadius: '50%',
+        //                 backgroundColor: `${service.color}20`,
+        //                 display: 'flex',
+        //                 alignItems: 'center',
+        //                 justifyContent: 'center',
+        //                 mb: 2
+        //             }
+        //         } >
+        //         <
+        //         img src = { service.icon }
+        //         alt = { service.title }
+        //         style = {
+        //             {
+        //                 width: 32,
+        //                 height: 32,
+        //                 objectFit: 'contain'
+        //             }
+        //         }
+        //         /> <
+        //         /Box> <
+        //         Typography variant = "h6"
+        //         component = "h3"
+        //         sx = {
+        //             {
+        //                 fontWeight: 'bold',
+        //                 mb: 1,
+        //                 color: '#333'
+        //             }
+        //         } > { service.title } <
+        //         /Typography> <
+        //         Typography variant = "body2"
+        //         color = "text.secondary" > { service.description } <
+        //         /Typography> <
+        //         /Card> <
+        //         /Grid>
+        //     ))
+        // } <
+        // /Grid> <
+        // /Container> <
         /Box>
 
         { /* Block giới thiệu Vinmec Phú Quốc */ } <
@@ -707,13 +708,13 @@ const Home = () => {
                 },
                 {
                     image: bs2,
-                    title: 'Bs.Nguyễn Văn A',
-                    description: 'Chuyên khoa Răng Hàm Mặt'
+                    title: 'Bs.Nguyễn Văn B',
+                    description: 'Chuyên khoa Tâm lý'
                 },
                 {
                     image: bs3,
-                    title: 'Bs.Nguyễn Văn A',
-                    description: 'Chuyên khoa Răng Hàm Mặt'
+                    title: 'Bs.Nguyễn Văn C',
+                    description: 'Chuyên khoa Ngoại Tổng Quát'
                 }
             ].map((item, index) => ( <
                 Grid item xs = { 4 }
@@ -722,42 +723,109 @@ const Home = () => {
                     { flex: '0 0 33.333%', display: 'flex', justifyContent: 'center' } } >
                 <
                 Box sx = {
-                    { textAlign: 'center', px: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' } } >
+                    { 
+                        textAlign: 'center', 
+                        px: 2, 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        width: '100%',
+                        height: '100%',
+                        justifyContent: 'space-between'
+                    } } >
                 <
-                Box component = "img"
-                src = { item.image }
-                alt = { item.title }
-                sx = {
-                    {
+                Box sx = {
+                    { 
                         width: '100%',
                         maxWidth: '300px',
-                        height: 'auto',
+                        height: '250px', 
                         borderRadius: '8px',
+                        overflow: 'hidden',
                         boxShadow: 3,
                         mb: 3,
                         transition: 'transform 0.3s ease-in-out',
                         '&:hover': {
                             transform: 'translateY(-5px)'
                         }
+                    } } >
+                <
+                Box 
+                    component = "img"
+                    src = { item.image }
+                    alt = { item.title }
+                    sx = {
+                        { 
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover', 
+                            display: 'block'
+                        }
                     }
-                }
-                /> <
-                Typography variant = "h6"
-                component = "h3"
-                sx = {
-                    { fontWeight: 'bold', mb: 2, color: '#333' } } > { item.title } <
-                /Typography> <
-                Typography variant = "body1"
-                color = "text.secondary" > { item.description } <
-                /Typography> <
-                /Box> <
-                /Grid>
-            ))
-        } <
-        /Grid> <
-        /Container> <
-        /Box>
-
+                />
+                </Box>
+                <Box sx={{ width: '100%', textAlign: 'center' }}>
+                    <Typography 
+                        variant="h6" 
+                        component="h3" 
+                        sx={{ 
+                            fontWeight: 'bold', 
+                            mb: 1, 
+                            color: '#333',
+                            minHeight: '48px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        {item.title}
+                    </Typography>
+                    <Typography 
+                        variant="body1" 
+                        color="text.secondary"
+                        sx={{
+                            minHeight: '60px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        {item.description}
+                    </Typography>
+                </Box>
+            </Box>
+        </Grid>
+            ))}
+            </Grid>
+        </Container>
+        
+        {/* Nút Xem thêm */}
+        <Box sx={{ textAlign: 'center', mt: 4, mb: 8 }}>
+            <Button 
+                component={Link}
+                to="/doctors"
+                variant="contained"
+                color="primary"
+                size="large"
+                sx={{
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: '50px',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '1.1rem',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+                    },
+                    transition: 'all 0.3s ease',
+                }}
+            >
+                Xem thêm
+                
+            </Button>
+        </Box>
+    </Box>
 
         {
             /* <Box sx={{ py: 8, bgcolor: '#f9f9f9' }}>
@@ -969,8 +1037,7 @@ const Home = () => {
                 </Box> */
         }
 
-        <
-        /Box>
+        </Box>
     );
 }
 

@@ -56,7 +56,7 @@ const PrescriptionsPage = () => {
     id: patientId || 'P001',
     name: 'Nguyễn Văn A',
     age: 35,
-    gender: 'male',
+    gender: 'Nam',
     address: '123 Đường ABC, Quận 1, TP.HCM',
     phone: '0987654321',
   });
@@ -66,11 +66,17 @@ const PrescriptionsPage = () => {
   // Initialize form when in create mode or patient data changes
   useEffect(() => {
     if (location.state?.patient) {
-      setCurrentPatient(prev => ({
-        ...prev,
-        ...location.state.patient,
-        gender: location.state.patient.gender === 'Nam' ? 'male' : 'female'
-      }));
+      const patientData = location.state.patient;
+      // Completely replace the current patient data with the new one
+      setCurrentPatient(patientData);
+      
+      // If viewing an existing prescription, update the patient data in the form
+      if (patientData.id) {
+        setSelectedPrescription(prev => ({
+          ...prev,
+          patientName: patientData.name
+        }));
+      }
     }
     
     // If in create mode, open the form
@@ -98,6 +104,8 @@ const PrescriptionsPage = () => {
       id: 2,
       patientId: 'P002',
       patientName: 'Trần Thị B',
+      patientAge: 40,
+      patientGender: 'Nữ',
       email: 'tranthib@example.com',
       date: '2025-06-09T14:15:00',
       status: 'completed',
@@ -110,6 +118,9 @@ const PrescriptionsPage = () => {
   ]);
   
   const [openDialog, setOpenDialog] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [prescriptionToDelete, setPrescriptionToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrescription, setSelectedPrescription] = useState({
     id: null,
@@ -143,29 +154,72 @@ const PrescriptionsPage = () => {
     setDiagnosis('');
     setNote('');
     setNewMedicine({ name: '', dosage: '', frequency: '', duration: '' });
+    setIsEditMode(true);
     setOpenDialog(true);
   };
 
-  const handleViewPrescription = (prescription) => {
+  const handleViewPrescription = (prescription, editMode = false) => {
+    // Find the patient data for this prescription
+    const patientPrescription = prescriptions.find(p => p.id === prescription.id);
+    
+    // Update the current patient with the prescription's patient data
+    if (patientPrescription) {
+      setCurrentPatient({
+        ...currentPatient,
+        name: patientPrescription.patientName,
+        // Keep other patient data if available, otherwise use defaults
+        age: patientPrescription.patientAge || currentPatient.age,
+        gender: patientPrescription.patientGender || currentPatient.gender
+      });
+    }
+    
     setSelectedPrescription({
       ...prescription,
-      medicines: prescription.medicines.length > 0 
+      patientName: patientPrescription?.patientName || prescription.patientName,
+      medicines: prescription.medicines?.length > 0 
         ? prescription.medicines 
         : [{ id: Date.now(), name: '', dosage: '', frequency: '', duration: '' }]
     });
+    
     setDiagnosis(prescription.diagnosis || '');
     setNote(prescription.note || '');
+    setIsEditMode(editMode);
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedPrescription(null);
+    setIsEditMode(false);
+  };
+
+  const handleOpenDeleteDialog = (prescription) => {
+    setPrescriptionToDelete(prescription);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setPrescriptionToDelete(null);
+  };
+
+  const handleDeletePrescription = () => {
+    if (prescriptionToDelete) {
+      setPrescriptions(prescriptions.filter(p => p.id !== prescriptionToDelete.id));
+      enqueueSnackbar('Xóa đơn thuốc thành công', { variant: 'success' });
+      handleCloseDeleteDialog();
+    }
   };
 
   const handleSavePrescription = async () => {
     try {
-      // Validate form
+      // In view mode, just close the dialog
+      if (!isEditMode) {
+        setOpenDialog(false);
+        return;
+      }
+
+      // In edit mode, validate and save
       if (!selectedPrescription?.patientName || !diagnosis) {
         enqueueSnackbar('Vui lòng điền đầy đủ thông tin bắt buộc', { variant: 'error' });
         return;
@@ -205,6 +259,7 @@ const PrescriptionsPage = () => {
       
       setOpenDialog(false);
       setSelectedPrescription(null);
+      setIsEditMode(false);
       
       // If in create mode, navigate back to prescriptions list
       if (isCreateMode) {
@@ -366,12 +421,35 @@ const PrescriptionsPage = () => {
                         <IconButton 
                           size="small" 
                           color="primary"
-                          onClick={() => handleViewPrescription(pres)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewPrescription(pres, false);
+                          }}
+                          title="Xem chi tiết"
                         >
                           <Visibility fontSize="small" />
                         </IconButton>
-                        <IconButton size="small" color="primary">
+                        <IconButton 
+                          size="small" 
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewPrescription(pres, true);
+                          }}
+                          title="Chỉnh sửa"
+                        >
                           <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          color="error"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDeleteDialog(pres);
+                          }}
+                          title="Xóa"
+                        >
+                          <DeleteIcon fontSize="small" />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -390,17 +468,50 @@ const PrescriptionsPage = () => {
         </TableContainer>
       </Paper>
 
+      {/* Xác nhận xóa đơn thuốc */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <Typography>Bạn có chắc chắn muốn xóa đơn thuốc này không?</Typography>
+          {prescriptionToDelete && (
+            <Box mt={2}>
+              <Typography variant="subtitle2">Mã đơn: #{prescriptionToDelete.id}</Typography>
+              <Typography variant="body2">Bệnh nhân: {prescriptionToDelete.patientName}</Typography>
+              <Typography variant="body2">Chẩn đoán: {prescriptionToDelete.diagnosis || '--'}</Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} color="primary">
+            Hủy
+          </Button>
+          <Button 
+            onClick={handleDeletePrescription} 
+            color="error"
+            variant="contained"
+          >
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Dialog tạo/xem đơn thuốc */}
       <Dialog 
         open={openDialog} 
-        onClose={() => setOpenDialog(false)}
+        onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle>
-          {selectedPrescription?.id ? 'Chi tiết đơn thuốc' : 'Tạo đơn thuốc mới'}
+          {isEditMode ? (selectedPrescription?.id ? 'Chỉnh sửa đơn thuốc' : 'Tạo đơn thuốc mới') : 'Chi tiết đơn thuốc'}
           <IconButton
-            onClick={() => setOpenDialog(false)}
+            aria-label="close"
+            onClick={handleCloseDialog}
             sx={{
               position: 'absolute',
               right: 8,
@@ -430,19 +541,21 @@ const PrescriptionsPage = () => {
               <TextField
                 label="Tuổi"
                 size="small"
-                type="number"
-                sx={{ width: '100px' }}
+                value={currentPatient?.age ? `${currentPatient.age} tuổi` : ''}
+                InputProps={{
+                  readOnly: true,
+                }}
+                sx={{ width: '120px' }}
               />
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <InputLabel>Giới tính</InputLabel>
-                <Select
-                  label="Giới tính"
-                  defaultValue=""
-                >
-                  <MenuItem value="male">Nam</MenuItem>
-                  <MenuItem value="female">Nữ</MenuItem>
-                </Select>
-              </FormControl>
+              <TextField
+                label="Giới tính"
+                size="small"
+                value={currentPatient?.gender || ''}
+                InputProps={{
+                  readOnly: true,
+                }}
+                sx={{ minWidth: '100px' }}
+              />
             </Box>
             
             <TextField
