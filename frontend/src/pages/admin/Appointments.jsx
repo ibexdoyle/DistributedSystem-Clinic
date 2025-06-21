@@ -31,6 +31,7 @@ import ChevronLeft from '@mui/icons-material/ChevronLeft';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import AppointmentActions from '../../components/appointment/AppointmentActions';
 
 // Dữ liệu mẫu

@@ -388,7 +388,6 @@ const PrescriptionsPage = () => {
                 <TableCell>Ngày tạo</TableCell>
                 <TableCell>Chẩn đoán</TableCell>
                 <TableCell>Thuốc</TableCell>
-                <TableCell>Trạng thái</TableCell>
                 <TableCell>Hành động</TableCell>
               </TableRow>
             </TableHead>
@@ -411,24 +410,6 @@ const PrescriptionsPage = () => {
                         {pres.medicines.length} loại
                       </TableCell>
                       <TableCell>
-                        <Chip 
-                          label={pres.status === 'pending' ? 'Chờ xử lý' : 'Đã hoàn thành'}
-                          color={pres.status === 'pending' ? 'warning' : 'success'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <IconButton 
-                          size="small" 
-                          color="primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewPrescription(pres, false);
-                          }}
-                          title="Xem chi tiết"
-                        >
-                          <Visibility fontSize="small" />
-                        </IconButton>
                         <IconButton 
                           size="small" 
                           color="primary"
@@ -436,7 +417,7 @@ const PrescriptionsPage = () => {
                             e.stopPropagation();
                             handleViewPrescription(pres, true);
                           }}
-                          title="Chỉnh sửa"
+                          title="Chỉnh sửa đơn thuốc"
                         >
                           <Edit fontSize="small" />
                         </IconButton>
@@ -447,7 +428,7 @@ const PrescriptionsPage = () => {
                             e.stopPropagation();
                             handleOpenDeleteDialog(pres);
                           }}
-                          title="Xóa"
+                          title="Xóa đơn thuốc"
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>

@@ -440,13 +440,9 @@ const Patients = () => {
                       {patient.phone}
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center">
-                      <EmailIcon fontSize="small" sx={{ mr: 0.5 }} />
-                      {patient.email}
-                    </Box>
-                  </TableCell>
-                  <TableCell>{new Date(patient.lastVisit).toLocaleDateString('vi-VN')}</TableCell>
+                  <TableCell>{patient.email}</TableCell>
+                  <TableCell>{patient.address}</TableCell>
+                  <TableCell>{patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString('vi-VN') : 'Chưa có'}</TableCell>
                   <TableCell>
                     <Chip
                       label={getStatusText(patient.status)}

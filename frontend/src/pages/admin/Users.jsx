@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { vi } from 'date-fns/locale';
+import { useSnackbar } from 'notistack';
 import {
   Avatar,
   Box,
@@ -66,6 +67,7 @@ const users = [
 const roles = ['Tất cả', 'Quản trị viên', 'Bác sĩ', 'Điều dưỡng', 'Lễ tân'];
 
 const Users = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
@@ -74,6 +76,14 @@ const Users = () => {
   const [selectedRole, setSelectedRole] = useState('Tất cả');
   const [anchorFilterEl, setAnchorFilterEl] = useState(null);
   const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [users, setUsers] = useState([
+    createUserData(1, 'Admin', 'admin@example.com', 'Quản trị viên', 'active', '2023-05-25 10:30'),
+    createUserData(2, 'Bác sĩ A', 'doctor1@example.com', 'Bác sĩ', 'active', '2023-05-25 09:15'),
+    createUserData(3, 'Điều dưỡng A', 'nurse1@example.com', 'Điều dưỡng', 'active', '2023-05-24 14:20'),
+    createUserData(4, 'Nhân viên lễ tân', 'reception@example.com', 'Lễ tân', 'inactive', '2023-05-23 16:45'),
+    createUserData(5, 'Bác sĩ B', 'doctor2@example.com', 'Bác sĩ', 'active', '2023-05-25 11:10'),
+  ]);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -84,7 +94,10 @@ const Users = () => {
     status: 'active',
     birthDate: null
   });
+  const [editingUser, setEditingUser] = useState(null);
   const [errors, setErrors] = useState({});
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -172,22 +185,86 @@ const Users = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleAddUser = () => {
+    const handleAddUser = () => {
     if (validateForm()) {
-      // Ở đây sẽ là logic gọi API để thêm người dùng mới
-      // Tạm thời chỉ hiển thị thông báo thành công
-      alert('Thêm tài khoản thành công!');
+      const newId = Math.max(...users.map(u => u.id), 0) + 1;
+      const userToAdd = {
+        ...newUser,
+        id: newId,
+        lastLogin: new Date().toISOString()
+      };
+      setUsers([userToAdd, ...users]);
+      enqueueSnackbar('Thêm tài khoản thành công!', { variant: 'success' });
       handleCloseAddDialog();
     }
   };
 
+  const handleEditUser = () => {
+    if (validateForm(editingUser)) {
+      setUsers(users.map(user => 
+        user.id === editingUser.id 
+          ? { ...editingUser, lastLogin: new Date().toISOString() }
+          : user
+      ));
+      enqueueSnackbar('Cập nhật tài khoản thành công!', { variant: 'success' });
+      setOpenEditDialog(false);
+      setEditingUser(null);
+    }
+  };
+
+  const handleToggleUserStatus = (userId) => {
+    setUsers(users.map(user => 
+      user.id === userId 
+        ? { ...user, status: user.status === 'active' ? 'inactive' : 'active' }
+        : user
+    ));
+    enqueueSnackbar(
+      `Đã ${users.find(u => u.id === userId)?.status === 'active' ? 'vô hiệu hóa' : 'kích hoạt'} tài khoản thành công!`, 
+      { variant: 'success' }
+    );
+    handleMenuClose();
+  };
+
+  const handleDeleteUser = () => {
+    setUsers(users.filter(user => user.id !== userToDelete));
+    enqueueSnackbar('Đã xóa tài khoản thành công!', { variant: 'success' });
+    setDeleteConfirmOpen(false);
+    setUserToDelete(null);
+  };
+
+  const handleOpenEditDialog = (user) => {
+    setEditingUser(user);
+    setOpenEditDialog(true);
+    handleMenuClose();
+  };
+
+  const handleOpenDeleteConfirm = (userId) => {
+    setUserToDelete(userId);
+    setDeleteConfirmOpen(true);
+    handleMenuClose();
+  };
+
+  const handleCloseDeleteConfirm = () => {
+    setDeleteConfirmOpen(false);
+    setUserToDelete(null);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewUser(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (editingUser) {
+      setEditingUser(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    } else {
+      setNewUser(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
+
+
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -364,13 +441,13 @@ const Users = () => {
           horizontal: 'right',
         }}
       >
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={() => handleOpenEditDialog(users.find(u => u.id === selectedUserId))}>
           <ListItemIcon>
             <EditIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Chỉnh sửa</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={() => handleToggleUserStatus(selectedUserId)}>
           <ListItemIcon>
             {users.find(u => u.id === selectedUserId)?.status === 'active' ? (
               <LockIcon fontSize="small" color="error" />
@@ -383,13 +460,146 @@ const Users = () => {
           </ListItemText>
         </MenuItem>
         <Divider />
-        <MenuItem onClick={handleMenuClose} sx={{ color: 'error.main' }}>
+        <MenuItem 
+          onClick={() => handleOpenDeleteConfirm(selectedUserId)} 
+          sx={{ color: 'error.main' }}
+        >
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />
           </ListItemIcon>
           <ListItemText>Xóa</ListItemText>
         </MenuItem>
       </Menu>
+
+      {/* Xác nhận xóa */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleCloseDeleteConfirm}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <Typography>Bạn có chắc chắn muốn xóa tài khoản này không? Hành động này không thể hoàn tác.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteConfirm} color="inherit">
+            Hủy
+          </Button>
+          <Button onClick={handleDeleteUser} color="error" variant="contained">
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog chỉnh sửa tài khoản */}
+      <Dialog 
+        open={openEditDialog} 
+        onClose={() => {
+          setOpenEditDialog(false);
+          setEditingUser(null);
+        }} 
+        maxWidth="sm" 
+        fullWidth
+      >
+        <DialogTitle>Chỉnh sửa tài khoản</DialogTitle>
+        <DialogContent>
+          <Box component="form" sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Họ và tên"
+                  name="name"
+                  value={editingUser?.name || ''}
+                  onChange={handleInputChange}
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  margin="normal"
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={editingUser?.email || ''}
+                  onChange={handleInputChange}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                  margin="normal"
+                  size="small"
+                  disabled
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Số điện thoại"
+                  name="phone"
+                  value={editingUser?.phone || ''}
+                  onChange={handleInputChange}
+                  error={!!errors.phone}
+                  helperText={errors.phone}
+                  margin="normal"
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth margin="normal" size="small" error={!!errors.role}>
+                  <InputLabel>Vai trò</InputLabel>
+                  <Select
+                    name="role"
+                    value={editingUser?.role || ''}
+                    label="Vai trò"
+                    onChange={handleInputChange}
+                  >
+                    <MenuItem value="Quản trị viên">Quản trị viên</MenuItem>
+                    <MenuItem value="Bác sĩ">Bác sĩ</MenuItem>
+                    <MenuItem value="Điều dưỡng">Điều dưỡng</MenuItem>
+                    <MenuItem value="Lễ tân">Lễ tân</MenuItem>
+                  </Select>
+                  {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth margin="normal" size="small">
+                  <InputLabel>Trạng thái</InputLabel>
+                  <Select
+                    name="status"
+                    value={editingUser?.status || 'active'}
+                    label="Trạng thái"
+                    onChange={handleInputChange}
+                  >
+                    <MenuItem value="active">Đang hoạt động</MenuItem>
+                    <MenuItem value="inactive">Vô hiệu hóa</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => {
+              setOpenEditDialog(false);
+              setEditingUser(null);
+            }} 
+            color="inherit"
+          >
+            Hủy
+          </Button>
+          <Button 
+            onClick={handleEditUser} 
+            color="primary" 
+            variant="contained"
+          >
+            Lưu thay đổi
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Dialog Thêm tài khoản mới */}
       <Dialog open={openAddDialog} onClose={handleCloseAddDialog} maxWidth="sm" fullWidth>
