@@ -1,0 +1,341 @@
+version: '3.9'
+
+services:
+
+  ########################################
+  # Eureka Discovery Server
+  
+  eureka-server:
+    image: eurekaserver:latest
+    build:
+      context: ./eureka-server
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8761:8761"
+    networks:
+      - clinic-net
+
+  ########################################
+  # API Gateway
+  
+  api-gateway:
+    image: apigateway:latest
+    build:
+      context: ./api-gateway
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+    networks:
+      - clinic-net
+
+  ########################################
+  # Auth Service + MySQL
+  
+  auth-service:
+    image: auth-service:latest
+    build:
+      context: ./auth-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8081:8080"
+    depends_on:
+      - auth-db
+    networks:
+      - clinic-net
+
+  auth-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: authdb
+    volumes:
+      - auth-data:/var/lib/mysql
+    networks:
+      - clinic-net
+
+  ########################################
+  # Patient Service + MySQL
+  
+  patient-service:
+    image: patient-service:latest
+    build:
+      context: ./patient-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8082:8080"
+    depends_on:
+      - patient-db
+    networks:
+      - clinic-net
+
+  patient-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: patientdb
+    volumes:
+      - patient-data:/var/lib/mysql
+    networks:
+      - clinic-net
+
+  ########################################
+  # Staff Service + MySQL
+  
+  staff-service:
+    image: staff-service:latest
+    build:
+      context: ./staff-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8083:8080"
+    depends_on:
+      - staff-db
+    networks:
+      - clinic-net
+
+  staff-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: staffdb
+    volumes:
+      - staff-data:/var/lib/mysql
+    networks:
+      - clinic-net
+
+  ########################################
+  # Appointment Service + PostgreSQL
+  
+  appointment-service:
+    image: appointment-service:latest
+    build:
+      context: ./appointment-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8084:8080"
+    depends_on:
+      - appointment-db
+      - kafka
+    networks:
+      - clinic-net
+
+  appointment-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appointmentdb
+    volumes:
+      - appointment-data:/var/lib/postgresql/data
+    networks:
+      - clinic-net
+
+  ########################################
+  # Prescription Service + PostgreSQL
+  
+  prescription-service:
+    image: prescription-service:latest
+    build:
+      context: ./prescription-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8085:8080"
+    depends_on:
+      - prescription-db
+    networks:
+      - clinic-net
+
+  prescription-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: prescriptiondb
+    volumes:
+      - prescription-data:/var/lib/postgresql/data
+    networks:
+      - clinic-net
+
+  ########################################
+  # Medicine Service + PostgreSQL
+  
+  medicine-service:
+    image: medicine-service:latest
+    build:
+      context: ./medicine-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8086:8080"
+    depends_on:
+      - medicine-db
+    networks:
+      - clinic-net
+
+  medicine-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: medicinedb
+    volumes:
+      - medicine-data:/var/lib/postgresql/data
+    networks:
+      - clinic-net
+
+  ########################################
+  # Notification Service + MongoDB
+  
+  notification-service:
+    image: notification-service:latest
+    build:
+      context: ./notification-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8087:8080"
+    depends_on:
+      - mongo
+      - kafka
+    networks:
+      - clinic-net
+
+  mongo:
+    image: mongo:5
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - clinic-net
+
+  ########################################
+  # Report Service + PostgreSQL
+  
+  report-service:
+    image: report-service:latest
+    build:
+      context: ./report-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8088:8080"
+    depends_on:
+      - report-db
+    networks:
+      - clinic-net
+
+  report-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: reportdb
+    volumes:
+      - report-data:/var/lib/postgresql/data
+    networks:
+      - clinic-net
+
+  ########################################
+  # Billing Service + MySQL
+  
+  billing-service:
+    image: billing-service:latest
+    build:
+      context: ./billing-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8089:8080"
+    depends_on:
+      - billing-db
+    networks:
+      - clinic-net
+
+  billing-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: billingdb
+    volumes:
+      - billing-data:/var/lib/mysql
+    networks:
+      - clinic-net
+
+  ########################################
+  # Kafka + Zookeeper
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+    networks:
+      - clinic-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    networks:
+      - clinic-net
+
+  ############################
+  # Prometheus
+  
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - clinic-net
+
+  ############################
+  # Grafana
+  
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - clinic-net
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+
+networks:
+  clinic-net:
+
+volumes:
+  auth-data:
+  patient-data:
+  staff-data:
+  appointment-data:
+  prescription-data:
+  medicine-data:
+  billing-data:
+  report-data:
+  mongo-data:
+
+
