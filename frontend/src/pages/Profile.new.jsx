@@ -28,8 +28,7 @@ import {
   DateRange as DateRangeIcon,
   Male as MaleIcon,
   Female as FemaleIcon,
-  PersonOutline as PersonOutlineIcon,
-  LocationOn as LocationOnIcon
+  PersonOutline as PersonOutlineIcon
 } from "@mui/icons-material";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -356,41 +355,6 @@ const Profile = () => {
                       )}
                     />
                   </LocalizationProvider>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Địa chỉ"
-                    name="address"
-                    type="text"
-                    value={formData.address}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LocationOnIcon color="action" />
-                        </InputAdornment>
-                      ),
-                      style: {
-                        width: '100%'
-                      }
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '& fieldset': {
-                          borderColor: 'rgba(0, 0, 0, 0.23)',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: 'rgba(0, 0, 0, 0.87)',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#1976d2',
-                        },
-                      },
-                    }}
-                  />
                 </Grid>
               </Grid>
             </form>

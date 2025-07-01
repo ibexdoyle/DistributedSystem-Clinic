@@ -59,7 +59,7 @@ const menuItemsByRole = {
             icon: <EventAvailableIcon fontSize="small" />
         },
         {
-            label: "Lịch sử khám",
+            label: "Quản lý lịch khám",
             path: "/my-appointments",
             icon: <HistoryIcon fontSize="small" />
         },

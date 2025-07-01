@@ -356,7 +356,7 @@ const Patients = () => {
           <TextField
             fullWidth
             variant="outlined"
-            placeholder="Tìm theo tên, số điện thoại, email hoặc mã BN..."
+            placeholder="Tìm kiếm bệnh nhân..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -397,13 +397,12 @@ const Patients = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Mã BN</TableCell>
+              <TableCell>Mã bệnh nhân</TableCell>
               <TableCell>Họ tên</TableCell>
               <TableCell>Giới tính</TableCell>
               <TableCell>Tuổi</TableCell>
               <TableCell>Số điện thoại</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Địa chỉ</TableCell>
               <TableCell>Lần khám gần nhất</TableCell>
               <TableCell>Trạng thái</TableCell>
               <TableCell align="right">Thao tác</TableCell>
@@ -412,18 +411,14 @@ const Patients = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : paginatedPatients.length > 0 ? (
               paginatedPatients.map((patient) => (
                 <TableRow key={patient.id} hover>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
-                      {patient.patientId || `BN${patient.id.toString().padStart(4, '0')}`}
-                    </Typography>
-                  </TableCell>
+                  <TableCell>{patient.patientId || `BN${patient.id.toString().padStart(4, '0')}`}</TableCell>
                   <TableCell>
                     <Box display="flex" alignItems="center">
                       <Avatar sx={{ width: 36, height: 36, mr: 2 }}>
@@ -440,9 +435,13 @@ const Patients = () => {
                       {patient.phone}
                     </Box>
                   </TableCell>
-                  <TableCell>{patient.email}</TableCell>
-                  <TableCell>{patient.address}</TableCell>
-                  <TableCell>{patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString('vi-VN') : 'Chưa có'}</TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <EmailIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      {patient.email}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{new Date(patient.lastVisit).toLocaleDateString('vi-VN')}</TableCell>
                   <TableCell>
                     <Chip
                       label={getStatusText(patient.status)}
@@ -555,6 +554,298 @@ const Patients = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+    </Box>
+  );
+};
+
+export default Patients;
+                      <MoreVertIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <Typography color="textSecondary">
+                    Không tìm thấy bệnh nhân nào
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={filteredPatients.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Số dòng mỗi trang:"
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}-${to} trong tổng số ${count}`
+        }
+      />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl) && Boolean(selectedPatient)}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={() => handleOpenDetails(selectedPatient)}>
+          <ListItemIcon>
+            <VisibilityIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Xem chi tiết</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleOpenForm(selectedPatient)}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Chỉnh sửa</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleDelete}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText primaryTypographyProps={{ color: 'error.main' }}>
+            Xóa
+          </ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Patient Form Dialog */}
+      <PatientForm
+        open={openForm}
+        onClose={handleCloseForm}
+        patient={selectedPatient}
+        onSubmit={handleSubmit}
+      />
+
+      {/* Patient Details Dialog */}
+      <PatientDetails
+        open={openDetails}
+        onClose={handleCloseDetails}
+        patient={selectedPatient}
+      />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      <TableContainer 
+        component={Paper} 
+        sx={{ 
+          maxHeight: '70vh',
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#888',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: '#f1f1f1'
+          }
+        }}
+      >
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Thông tin bệnh nhân</TableCell>
+              <TableCell>Liên hệ</TableCell>
+              <TableCell>Lần khám gần nhất</TableCell>
+              <TableCell>Trạng thái</TableCell>
+              <TableCell align="right">Thao tác</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {(rowsPerPage > 0
+              ? filteredPatients.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              : filteredPatients
+            ).map((patient) => (
+              <TableRow key={patient.id} hover>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar sx={{ width: 40, height: 40 }}>
+                      {patient.name.charAt(0)}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="medium">
+                        {patient.name}
+                        <Chip 
+                          label={patient.gender === 'Nam' ? 'Nam' : 'Nữ'} 
+                          size="small" 
+                          sx={{ ml: 1, fontSize: '0.7rem' }}
+                          variant="outlined"
+                        />
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        ID: {patient.id} | {patient.age} tuổi
+                      </Typography>
+                    </Box>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <PhoneIcon fontSize="small" color="action" />
+                      <Typography variant="body2">{patient.phone}</Typography>
+                    </Box>
+                    {patient.email && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <EmailIcon fontSize="small" color="action" />
+                        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                          {patient.email}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2">
+                    {new Date(patient.lastVisit).toLocaleDateString()}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {new Date(patient.lastVisit).toLocaleTimeString()}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Chip 
+                    label={getStatusText(patient.status)}
+                    size="small"
+                    color={getStatusColor(patient.status)}
+                    variant="outlined"
+                  />
+                </TableCell>
+                <TableCell align="right">
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Tooltip title="Xem hồ sơ">
+                      <IconButton size="small" color="primary">
+                        <LocalHospitalIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Đặt lịch hẹn">
+                      <IconButton size="small" color="secondary">
+                        <EventNoteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, patient.id)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}
+            {emptyRows > 0 && (
+              <TableRow style={{ height: 73 * emptyRows }}>
+                <TableCell colSpan={5} />
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={filteredPatients.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Số dòng mỗi trang:"
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} trong ${count}`
+          }
+        />
+      </TableContainer>
+
+      {/* Patient Form Modal */}
+      <PatientForm
+        open={openForm}
+        onClose={handleCloseForm}
+        patient={editingPatient}
+        onSubmit={handleSubmitPatient}
+      />
+
+      {/* Patient Details Modal */}
+      <PatientDetails
+        open={openDetails}
+        onClose={handleCloseDetails}
+        patient={selectedPatient}
+      />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={handleEditPatient}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Chỉnh sửa thông tin</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleViewDetails}>
+          <ListItemIcon>
+            <LocalHospitalIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Xem hồ sơ chi tiết</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleViewHistory}>
+          <ListItemIcon>
+            <EventNoteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Xem lịch sử khám</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleDeletePatient} sx={{ color: 'error.main' }}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Xóa hồ sơ</ListItemText>
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };

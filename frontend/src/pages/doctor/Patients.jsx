@@ -43,6 +43,7 @@ const PatientsPage = () => {
   const [patients, setPatients] = useState([
     {
       id: 1,
+      patientId: 'BN0001',
       name: 'Nguyễn Văn A',
       gender: 'male',
       dob: '1990-01-15',
@@ -55,6 +56,7 @@ const PatientsPage = () => {
     },
     {
       id: 2,
+      patientId: 'BN0002',
       name: 'Trần Thị B',
       gender: 'female',
       dob: '1985-08-22',
@@ -109,6 +111,7 @@ const PatientsPage = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell>Mã BN</TableCell>
                 <TableCell>Bệnh nhân</TableCell>
                 <TableCell>Thông tin liên hệ</TableCell>
                 <TableCell>Lần khám gần nhất</TableCell>
@@ -120,6 +123,9 @@ const PatientsPage = () => {
               {filteredPatients.length > 0 ? (
                 filteredPatients.map((patient) => (
                   <TableRow key={patient.id} hover>
+                    <TableCell>
+                      <Typography variant="subtitle2">{patient.patientId || `BN${patient.id.toString().padStart(4, '0')}`}</Typography>
+                    </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar>

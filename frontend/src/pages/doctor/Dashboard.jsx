@@ -15,7 +15,15 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  Button
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import {
   MedicalServices,
@@ -26,7 +34,10 @@ import {
   EventAvailable,
   LocalHospital,
   EventBusy,
-  CheckCircle
+  CheckCircle,
+  Visibility as VisibilityIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -54,19 +65,35 @@ const Dashboard = () => {
 
     setUpcomingAppointments([
       {
-        id: 1,
+        id: 'LH001',
+        stt: '001',
+        patientId: 'BN2024001',
         patientName: 'Nguyễn Văn A',
-        time: new Date(Date.now() + 3600000 * 2), // 2 hours from now
-        service: 'Khám tổng quát',
-        status: 'confirmed'
+        phone: '0987654321',
+        appointmentDate: new Date(Date.now() + 3600000 * 2),
+        status: 'Đã xác nhận',
+        actions: ['view', 'edit', 'delete']
       },
       {
-        id: 2,
+        id: 'LH002',
+        stt: '002',
+        patientId: 'BN2024002',
         patientName: 'Trần Thị B',
-        time: new Date(Date.now() + 3600000 * 4), // 4 hours from now
-        service: 'Tái khám',
-        status: 'confirmed'
+        phone: '0912345678',
+        appointmentDate: new Date(Date.now() + 3600000 * 4),
+        status: 'Chờ xác nhận',
+        actions: ['view', 'edit', 'delete']
       },
+      {
+        id: 'LH003',
+        stt: '003',
+        patientId: 'BN2024003',
+        patientName: 'Lê Văn C',
+        phone: '0905123456',
+        appointmentDate: new Date(Date.now() + 3600000 * 6),
+        status: 'Đã hủy',
+        actions: ['view', 'delete']
+      }
     ]);
   }, []); 
 
@@ -99,11 +126,15 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ 
+      display: 'grid',
+      gridTemplateColumns: 'minmax(0, 1fr)',
       width: '100%',
       p: 3,
       boxSizing: 'border-box',
-      maxWidth: '100%',
-      mx: 'auto'
+      mx: 0,
+      '& > *': {
+        minWidth: 0, // Prevent grid blowout
+      }
     }}>
       <Typography variant="h4" component="h1" gutterBottom>
         <MedicalServices sx={{ verticalAlign: 'middle', mr: 1 }} />
@@ -147,70 +178,124 @@ const Dashboard = () => {
 </Grid>
 
 
-      <Grid container spacing={3} sx={{ width: '100%', m: 0, maxWidth: '100%' }}>
+      <Box sx={{ 
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr)',
+        gap: 3,
+        width: '100%',
+        m: 0,
+        '& > *': {
+          minWidth: 0, // Prevent grid items from overflowing
+        }
+      }}>
         {/* Upcoming Appointments */}
         <Grid item xs={12} md={12}>
-          <Card sx={{ width: '100%', mx: 0 }}>
+          <Card sx={{ width: '100%' }}>
             <CardHeader 
               title="Cuộc hẹn sắp tới" 
               action={
                 <Button 
                   size="small" 
+                  variant="outlined"
                   onClick={() => navigate('/doctor/appointments')}
+                  sx={{ textTransform: 'none' }}
                 >
                   Xem tất cả
                 </Button>
               }
+              sx={{ pb: 1 }}
             />
             <Divider />
-            <CardContent>
-              <List>
-                {upcomingAppointments.length > 0 ? (
-                  upcomingAppointments.map((appt) => (
-                    <React.Fragment key={appt.id}>
-                      <ListItem 
-                        button 
-                        onClick={() => navigate(`/doctor/appointments/${appt.id}`)}
-                        secondaryAction={
-                          <Chip 
-                            label={appt.status === 'confirmed' ? 'Đã xác nhận' : 'Chờ xác nhận'}
-                            color={appt.status === 'confirmed' ? 'primary' : 'default'}
-                            size="small"
-                          />
-                        }
-                      >
-                        <ListItemIcon>
-                          <Person color="primary" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={appt.patientName}
-                          secondary={
-                            <>
-                              <Box component="span" display="flex" alignItems="center" mt={0.5}>
-                                <AccessTime fontSize="small" sx={{ mr: 0.5 }} />
-                                {format(appt.time, 'HH:mm, EEE, dd/MM/yyyy', { locale: vi })}
-                              </Box>
-                              <Box component="span" display="flex" alignItems="center" mt={0.5}>
-                                <LocalHospital fontSize="small" sx={{ mr: 0.5 }} />
-                                {appt.service}
-                              </Box>
-                            </>
-                          }
-                        />
-                      </ListItem>
-                      <Divider component="li" />
-                    </React.Fragment>
-                  ))
-                ) : (
-                  <ListItem>
-                    <ListItemText primary="Không có cuộc hẹn sắp tới" />
-                  </ListItem>
-                )}
-              </List>
+            <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1.5 }}>STT</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1.5 }}>Mã lịch hẹn</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1.5 }}>Bệnh nhân</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1.5 }}>Số điện thoại</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1.5 }}>Ngày hẹn</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1.5 }}>Trạng thái</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', py: 1.5, textAlign: 'center' }}>Thao tác</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {upcomingAppointments.length > 0 ? (
+                      upcomingAppointments.map((appt) => (
+                        <TableRow 
+                          key={appt.id}
+                          hover
+                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                          <TableCell>{appt.stt}</TableCell>
+                          <TableCell>{appt.id}</TableCell>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="subtitle2">{appt.patientName}</Typography>
+                              <Typography variant="body2" color="text.secondary">Mã BN: {appt.patientId}</Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>{appt.phone}</TableCell>
+                          <TableCell>
+                            {format(appt.appointmentDate, 'HH:mm, dd/MM/yyyy', { locale: vi })}
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={appt.status}
+                              size="small"
+                              color={
+                                appt.status === 'Đã xác nhận' ? 'success' :
+                                appt.status === 'Chờ xác nhận' ? 'warning' : 'error'
+                              }
+                              sx={{ 
+                                fontWeight: 500,
+                                minWidth: 100,
+                                '& .MuiChip-label': { px: 1.5 }
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                              {appt.actions.includes('view') && (
+                                <Tooltip title="Xem chi tiết">
+                                  <IconButton size="small" color="primary">
+                                    <VisibilityIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                              {appt.actions.includes('edit') && (
+                                <Tooltip title="Chỉnh sửa">
+                                  <IconButton size="small" color="warning">
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                              {appt.actions.includes('delete') && (
+                                <Tooltip title="Xóa">
+                                  <IconButton size="small" color="error">
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                          Không có dữ liệu
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </CardContent>
           </Card>
         </Grid>
-      </Grid>
+      </Box>
     </Box>
   );
 };

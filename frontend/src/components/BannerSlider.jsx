@@ -1,154 +1,242 @@
 import React, { useState, useEffect } from "react";
-import { Box } from "@mui/material";
+import { Box, Typography, Button } from "@mui/material";
 
-// Danh sách các ảnh banner, có thể mở rộng sau này
-import bannerVinMec from "../assets/bannerVinMec.jpg";
-import bannerVinMec2 from "../assets/bannerVinMec2.png";
-import bannerVinMec3 from "../assets/bannerVinMec3.png";
-import bannerVinMec4 from "../assets/bannerVinMec4.jpg";
-
-const banners = [bannerVinMec, bannerVinMec2, bannerVinMec3, bannerVinMec4];
+// Dữ liệu banner
+const bannerData = [
+  {
+    id: 1,
+    image: require("../assets/bannerVinMec1.png"),
+    title: "Bệnh Viện Đa Khoa VinMec Phú Quốc",
+    subtitle: "CHĂM SÓC SỨC KHỎE CỦA BẠN VỚI ĐỘI NGŨ BÁC SĨ CHUYÊN NGHIỆP",
+    buttonText: "ĐẶT LỊCH KHÁM NGAY"
+  },
+  {
+    id: 2,
+    image: require("../assets/bannerVinMec2.png"),
+    title: "DỊCH VỤ Y TẾ CHẤT LƯỢNG CAO",
+    subtitle: "Trang thiết bị hiện đại - Chăm sóc tận tâm",
+    buttonText: "TÌM HIỂU THÊM"
+  },
+  {
+    id: 3,
+    image: require("../assets/bannerVinMec3.png"),
+    title: "CƠ SỞ VẬT CHẤT HIỆN ĐẠI",
+    subtitle: "Môi trường khám chữa bệnh đạt tiêu chuẩn quốc tế",
+    buttonText: "THAM QUAN BỆNH VIỆN"
+  },
+  {
+    id: 4,
+    image: require("../assets/bannerVinMec4.jpg"),
+    title: "ĐỘI NGŨ CHUYÊN GIA ĐẦU NGÀNH",
+    subtitle: "Được đào tạo bài bản và giàu kinh nghiệm",
+    buttonText: "XEM CHUYÊN GIA"
+  }
+];
 
 const BannerSlider = () => {
-    const [current, setCurrent] = useState(0);
-    const bannerCount = banners.length;
-    // Tự động trượt
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrent((prev) => (prev + 1) % bannerCount);
-        }, 4000);
-        return () => clearInterval(timer);
-    }, [bannerCount]);
+  const [current, setCurrent] = useState(0);
+  const bannerCount = bannerData.length;
+  
+  // Tự động chuyển slide
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % bannerCount);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [bannerCount]);
 
-    // Chuyển banner thủ công
-    const handlePrev = () =>
-        setCurrent((prev) => (prev - 1 + bannerCount) % bannerCount);
-    const handleNext = () => setCurrent((prev) => (prev + 1) % bannerCount);
+  const handlePrev = () => {
+    setCurrent((prev) => (prev - 1 + bannerCount) % bannerCount);
+  };
 
-    return ( <
-        Box sx = {
-            {
-                width: "1531px",
-                height: "622.92px",
-                position: "relative",
-                overflow: "hidden",
-                background: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+  const handleNext = () => {
+    setCurrent((prev) => (prev + 1) % bannerCount);
+  };
+
+  const handleDotClick = (index) => {
+    setCurrent(index);
+  };
+
+  return (
+    <Box
+      sx={{
+        width: "100%",
+        height: { xs: "400px", md: "600px" },
+        position: "relative",
+        overflow: "hidden",
+        mb: 4,
+        boxShadow: 3,
+      }}
+    >
+      {/* Các slide */}
+      {bannerData.map((banner, idx) => (
+        <Box
+          key={banner.id}
+          sx={{
+            width: "100%",
+            height: "100%",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            opacity: idx === current ? 1 : 0,
+            transition: "opacity 0.8s ease-in-out",
+            zIndex: 1,
+          }}
+        >
+          <Box
+            component="img"
+            src={banner.image}
+            alt={banner.title}
+            sx={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              position: "absolute",
+              top: 0,
+              left: 0,
+            }}
+          />
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              bgcolor: "rgba(0, 0, 0, 0.4)",
+              zIndex: 2,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
+              px: 2,
+              color: "white",
+            }}
+          >
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{
+                fontWeight: 700,
+                mb: 2,
+                fontSize: { xs: "1.8rem", md: "3rem" },
+                textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
+              }}
+            >
+              {banner.title}
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{
                 mb: 4,
-                boxShadow: 3,
-                p: 0
-            }
-        } >
-        { " " } {
-            banners.map((img, idx) => ( <
-                Box key = { idx }
-                component = "img"
-                src = { img }
-                alt = { `Banner ${idx + 1}` }
-                sx = {
-                    {
-                        width: "1531px",
-                        height: "622.92px",
-                        objectFit: "cover",
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        opacity: idx === current ? 1 : 0,
-                        transition: "opacity 0.8s",
-                        zIndex: idx === current ? 2 : 1,
-                        background: "white"
-                    }
-                }
-                />
-            ))
-        } { " " } { /* Nút chuyển trái/phải */ } { " " } <
-        Box sx = {
-            {
-                position: "absolute",
-                left: 16,
-                top: "50%",
-                transform: "translateY(-50%)",
-                zIndex: 10
-            }
-        } >
-        <
-        button onClick = { handlePrev }
-        style = {
-            {
-                background: "rgba(0,0,0,0.35)",
-                border: "none",
-                borderRadius: "50%",
-                width: 44,
-                height: 44,
-                color: "#fff",
-                fontSize: 28,
-                cursor: "pointer",
-                outline: "none"
-            }
-        } >
-        { " " } { "<" } { " " } <
-        /button>{" "} <
-        /Box>{" "} <
-        Box sx = {
-            {
-                position: "absolute",
-                right: 16,
-                top: "50%",
-                transform: "translateY(-50%)",
-                zIndex: 10
-            }
-        } >
-        <
-        button onClick = { handleNext }
-        style = {
-            {
-                background: "rgba(0,0,0,0.35)",
-                border: "none",
-                borderRadius: "50%",
-                width: 44,
-                height: 44,
-                color: "#fff",
-                fontSize: 28,
-                cursor: "pointer",
-                outline: "none"
-            }
-        } >
-        { " " } { ">" } { " " } <
-        /button>{" "} <
-        /Box>{" "} { /* Chấm chỉ số dưới banner */ } { " " } <
-        Box sx = {
-            {
-                position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 16,
-                display: "flex",
-                justifyContent: "center",
-                zIndex: 20
-            }
-        } >
-        { " " } {
-            banners.map((_, idx) => ( <
-                Box key = { idx }
-                sx = {
-                    {
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        background: idx === current ? "#1976d2" : "#bbb",
-                        mx: 0.5,
-                        transition: "background 0.3s",
-                        border: idx === current ? "2px solid #fff" : "none"
-                    }
-                }
-                />
-            ))
-        } { " " } <
-        /Box>{" "} <
-        /Box>
-    );
+                maxWidth: "800px",
+                fontSize: { xs: "1.1rem", md: "1.5rem" },
+                textShadow: "1px 1px 3px rgba(0,0,0,0.7)",
+              }}
+            >
+              {banner.subtitle}
+            </Typography>
+            <Button
+              variant="contained"
+              size="large"
+              sx={{
+                px: 4,
+                py: 1.5,
+                fontSize: "1.1rem",
+                fontWeight: 600,
+                borderRadius: "30px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+                bgcolor: "#00a0dc",
+                "&:hover": {
+                  bgcolor: "#0088c1",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 25px rgba(0,0,0,0.3)",
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              {banner.buttonText}
+            </Button>
+          </Box>
+        </Box>
+      ))}
+
+      {/* Nút điều hướng */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "space-between",
+          px: 2,
+          zIndex: 3,
+        }}
+      >
+        <NavigationButton direction="prev" onClick={handlePrev} />
+        <NavigationButton direction="next" onClick={handleNext} />
+      </Box>
+
+      {/* Chấm chỉ số */}
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 20,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          gap: 1,
+          zIndex: 3,
+        }}
+      >
+        {bannerData.map((_, idx) => (
+          <Box
+            key={idx}
+            onClick={() => handleDotClick(idx)}
+            sx={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              bgcolor: current === idx ? "#00a0dc" : "rgba(255,255,255,0.5)",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                bgcolor: current === idx ? "#0088c1" : "rgba(255,255,255,0.8)",
+              },
+            }}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
 };
+
+// Component nút điều hướng
+const NavigationButton = ({ direction, onClick }) => (
+  <Box
+    onClick={onClick}
+    sx={{
+      width: 44,
+      height: 44,
+      borderRadius: "50%",
+      bgcolor: "rgba(0,0,0,0.35)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "white",
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      "&:hover": {
+        bgcolor: "rgba(0,0,0,0.6)",
+        transform: "scale(1.1)",
+      },
+    }}
+  >
+    {direction === "prev" ? "<" : ">"}
+  </Box>
+);
 
 export default BannerSlider;
