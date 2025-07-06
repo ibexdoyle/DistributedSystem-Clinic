@@ -29,5 +29,8 @@ public class Medicine {
 
     private Integer stockQuantity;
 
+    private Double price;
+    private String provider;
+
     private LocalDate expiryDate;
 }

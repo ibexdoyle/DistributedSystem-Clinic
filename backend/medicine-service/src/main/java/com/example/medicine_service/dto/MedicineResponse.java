@@ -15,4 +15,6 @@ public class MedicineResponse {
     private String unit;
     private Integer stockQuantity;
     private LocalDate expiryDate;
+    private Double price;
+    private String provider;
 }

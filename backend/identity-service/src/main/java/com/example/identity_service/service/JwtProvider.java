@@ -29,7 +29,7 @@ public class JwtProvider {
                 .toList();
 
         return Jwts.builder()
-                .setSubject(user.getUsername())
+                .setSubject(user.getEmail())
                 .claim("permissions", permissions)
                 .claim("role", user.getRole().getName().name())
                 .setIssuedAt(new Date())

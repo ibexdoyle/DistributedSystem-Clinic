@@ -30,7 +30,13 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = Appointment.builder()
                 .patientId(req.getPatientId())
                 .doctorId(req.getDoctorId())
-                .appointmentDateTime(LocalDateTime.now())
+                .appointmentDateTime(
+                        LocalDateTime.of(
+                                req.getAppointmentDate(),
+                                req.getAppointmentTime())
+                )
+                .doctorName(req.getDoctorName())
+                .medicalSpecialty(req.getMedicalSpecialty())
                 .reason(req.getReason())
                 .status(Appointment.Status.SCHEDULED)
                 .createdAt(LocalDateTime.now())
@@ -86,6 +92,8 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .id(a.getId())
                 .patientId(a.getPatientId())
                 .doctorId(a.getDoctorId())
+                .doctorName(a.getDoctorName())
+                .medicalSpecialty(a.getMedicalSpecialty())
                 .appointmentDateTime(a.getAppointmentDateTime())
                 .status(a.getStatus())
                 .reason(a.getReason())

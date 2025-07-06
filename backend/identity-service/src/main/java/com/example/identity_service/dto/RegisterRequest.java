@@ -2,4 +2,4 @@ package com.example.identity_service.dto;
 
 import com.example.identity_service.model.enums.RoleType;
 
-public record RegisterRequest(String username, String password, RoleType roleType) {}
+public record RegisterRequest(String email, String password, RoleType roleType) {}

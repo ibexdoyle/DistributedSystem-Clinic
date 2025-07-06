@@ -22,12 +22,18 @@ public class Appointment {
     private Long patientId;
     private Long doctorId;
 
+    private String doctorName;
+
+    private String medicalSpecialty;
+
+    private String reason;
+
+
     private LocalDateTime appointmentDateTime;
 
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    private String reason;
     private LocalDateTime createdAt;
 
     public enum Status {

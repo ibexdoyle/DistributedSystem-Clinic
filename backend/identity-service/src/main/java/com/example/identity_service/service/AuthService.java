@@ -29,7 +29,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
         User user = User.builder()
-                .username(request.username())
+                .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .role(role)
                 .build();
@@ -39,7 +39,7 @@ public class AuthService {
         String token = jwtProvider.generateToken(user);
         return new AuthResponse(
                 token,
-                user.getUsername(),
+                user.getEmail(),
                 user.getRole().getName().name(),
                 user.getRole().getPermissions().stream().map(Enum::name).toList()
         );
@@ -47,16 +47,16 @@ public class AuthService {
 
     public AuthResponse login(AuthRequest request) {
         authManager.authenticate(new UsernamePasswordAuthenticationToken(
-                request.username(), request.password()
+                request.email(), request.password()
         ));
 
-        User user = userRepository.findByUsername(request.username())
+        User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         String token = jwtProvider.generateToken(user);
         return new AuthResponse(
                 token,
-                user.getUsername(),
+                user.getEmail(),
                 user.getRole().getName().name(),
                 user.getRole().getPermissions().stream().map(Enum::name).toList()
         );

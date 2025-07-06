@@ -28,7 +28,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     public PrescriptionResponse create(CreatePrescriptionRequest request) {
 
         try {
-            patientClient.getPatientById(request.getPatientId()); // kiểm tra tồn tại
+            patientClient.getPatientById(request.getPatientId());
         } catch (Exception e) {
             throw new RuntimeException("Invalid patient ID: " + request.getPatientId());
         }
@@ -38,6 +38,10 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         Prescription prescription = Prescription.builder()
                 .patientId(request.getPatientId())
                 .doctorId(request.getDoctorId())
+                .doctorName(request.getDoctorName())
+                .note(request.getNote())
+                .diagnosis(request.getDiagnosis())
+                .symptoms(request.getSymptoms())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -66,18 +70,24 @@ public class PrescriptionServiceImpl implements PrescriptionService {
 
     private PrescriptionResponse mapToResponse(Prescription p) {
         List<PrescriptionResponse.Item> items = p.getItems().stream()
-                .map(i -> new PrescriptionResponse.Item(
-                        i.getMedicineName(),
-                        i.getDosage(),
-                        i.getInstruction()))
+                .map(i -> PrescriptionResponse.Item.builder()
+                        .medicineName(i.getMedicineName())
+                        .dosage(i.getDosage())
+                        .instruction(i.getInstruction())
+                        .build())
                 .collect(Collectors.toList());
 
-        return new PrescriptionResponse(
-                p.getId(),
-                p.getPatientId(),
-                p.getDoctorId(),
-                p.getCreatedAt(),
-                items
-        );
+        return PrescriptionResponse.builder()
+                .id(p.getId())
+                .patientId(p.getPatientId())
+                .doctorId(p.getDoctorId())
+                .createdAt(p.getCreatedAt())
+                .doctorName(p.getDoctorName())
+                .diagnosis(p.getDiagnosis())
+                .symptoms(p.getSymptoms())
+                .note(p.getNote())
+                .items(items)
+                .build();
     }
+
 }

@@ -25,6 +25,8 @@ public class MedicineServiceImpl implements MedicineService {
                 .unit(request.getUnit())
                 .stockQuantity(request.getStockQuantity())
                 .expiryDate(request.getExpiryDate())
+                .price(request.getPrice())
+                .provider(request.getProvider())
                 .build();
 
         Medicine saved = medicineRepository.save(medicine);
@@ -74,6 +76,8 @@ public class MedicineServiceImpl implements MedicineService {
                 .unit(medicine.getUnit())
                 .stockQuantity(medicine.getStockQuantity())
                 .expiryDate(medicine.getExpiryDate())
+                .price(medicine.getPrice())
+                .provider(medicine.getProvider())
                 .build();
     }
 }
