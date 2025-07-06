@@ -10,7 +10,7 @@ import Footer from './layouts/Footer';
 import Login from './pages/Login';
 import Patients from './pages/Patients';
 import Appointments from './pages/Appointments';
-import Prescriptions from './pages/Prescriptions';
+import Prescriptions from './pages/admin/Prescriptions';
 import Notifications from './pages/Notifications';
 import MyAppointments from './pages/MyAppointments';
 import MyMedicalRecords from './pages/MyMedicalRecords';
@@ -27,6 +27,7 @@ import ENTDepartment from './pages/ENTDepartment';
 import NeurologyDepartment from './pages/NeurologyDepartment';
 import Profile from './pages/Profile';
 import Admin from './pages/admin';
+import Medicines from './pages/admin/Medicines';
 
 // Lazy load doctor components
 const DoctorLayout = React.lazy(() => import('./layouts/DoctorLayout'));
@@ -199,7 +200,16 @@ function MainContent() {
               <ProtectedRoute adminOnly>
                 <Admin />
               </ProtectedRoute>
-            } />
+            }>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<div>Admin Dashboard</div>} />
+              <Route path="patients" element={<Patients />} />
+              <Route path="appointments" element={<Appointments />} />
+              <Route path="prescriptions" element={<Prescriptions />} />
+              <Route path="medicines" element={<Medicines />} />
+              <Route path="users" element={<div>Quản lý tài khoản</div>} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
+            </Route>
             
             {/* Redirect all other paths to home */}
             <Route path="*" element={<Navigate to="/" replace />} />

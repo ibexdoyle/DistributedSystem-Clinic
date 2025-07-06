@@ -238,41 +238,53 @@ const AdminPrescriptionsPage = () => {
                         />
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" gap={1}>
+                        <Box display="flex" gap={1} alignItems="center">
                           <IconButton 
                             size="small" 
                             color="primary"
                             onClick={() => handleViewDetails(pres)}
                             title="Xem chi tiết"
+                            sx={{ mr: 1 }}
                           >
                             <Visibility fontSize="small" />
                           </IconButton>
                           
-                          {/* Status update buttons */}
-                          <Box sx={{ display: 'flex', gap: 1 }}>
+                          {/* Chỉ hiển thị nút "Đã lấy" nếu trạng thái là "Chưa lấy" */}
+                          {pres.status === 'pending' && (
                             <Button
                               size="small"
-                              variant={pres.status === 'pending' ? 'contained' : 'outlined'}
-                              color="warning"
-                              startIcon={<PendingOutlinedIcon />}
-                              onClick={() => handleStatusUpdate(pres.id, 'pending')}
-                              disabled={pres.status === 'pending'}
-                              sx={{ minWidth: 120 }}
-                            >
-                              Chưa lấy
-                            </Button>
-                            <Button
-                              size="small"
-                              variant={pres.status === 'completed' ? 'contained' : 'outlined'}
+                              variant="outlined"
                               color="success"
                               startIcon={<CheckCircleOutlineIcon />}
-                              onClick={() => handleStatusUpdate(pres.id, 'completed')}
-                              disabled={pres.status === 'completed'}
-                              sx={{ minWidth: 120 }}
+                              onClick={(e) => {
+                                // Vô hiệu hóa nút ngay lập tức khi nhấn
+                                e.currentTarget.disabled = true;
+                                e.currentTarget.style.opacity = '0.7';
+                                handleStatusUpdate(pres.id, 'completed');
+                              }}
+                              sx={{
+                                minWidth: 100,
+                                '&.Mui-disabled': {
+                                  opacity: 0.7,
+                                  color: 'success.main',
+                                  borderColor: 'success.main'
+                                }
+                              }}
                             >
                               Đã lấy
                             </Button>
-                          </Box>
+                          )}
+                          
+                          {/* Hiển thị trạng thái nếu đã lấy */}
+                          {pres.status === 'completed' && (
+                            <Chip 
+                              icon={<CheckCircleOutlineIcon />}
+                              label="Đã lấy"
+                              color="success"
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>

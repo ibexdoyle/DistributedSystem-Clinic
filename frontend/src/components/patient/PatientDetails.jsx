@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -19,10 +19,17 @@ import {
   TableHead,
   TableRow,
   Tabs,
-  Tab
+  Tab,
+  Tooltip
 } from '@mui/material';
-import { Close as CloseIcon, LocalHospital as HospitalIcon, EventNote as EventNoteIcon } from '@mui/icons-material';
+import { 
+  Close as CloseIcon, 
+  LocalHospital as HospitalIcon, 
+  EventNote as EventNoteIcon,
+  Add as AddIcon
+} from '@mui/icons-material';
 import PropTypes from 'prop-types';
+import PrescriptionForm from './PrescriptionForm';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -58,7 +65,43 @@ function a11yProps(index) {
 }
 
 const PatientDetails = ({ open, onClose, patient }) => {
-  const [tabValue, setTabValue] = React.useState(0);
+  const [tabValue, setTabValue] = useState(0);
+  const [prescriptionFormOpen, setPrescriptionFormOpen] = useState(false);
+  const [prescriptions, setPrescriptions] = useState([
+    { id: 1, date: '2023-05-20', medicine: 'Paracetamol 500mg', dosage: '1 viên/lần, ngày 3 lần', duration: '5 ngày' },
+    { id: 2, date: '2023-04-15', medicine: 'Amoxicillin 500mg', dosage: '1 viên/lần, ngày 2 lần', duration: '7 ngày' },
+  ]);
+
+  const handleOpenPrescriptionForm = () => {
+    setPrescriptionFormOpen(true);
+  };
+
+  const handleClosePrescriptionForm = () => {
+    setPrescriptionFormOpen(false);
+  };
+
+  const handleSubmitPrescription = (prescriptionData) => {
+    // In a real app, this would be an API call
+    const newPrescription = {
+      id: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      medicine: dummyMedicines.find(m => m.id === prescriptionData.medicines[0].medicineId)?.name || 'Thuốc mới',
+      dosage: prescriptionData.medicines[0].dosage,
+      duration: '7 ngày' // This would be calculated based on the prescription data
+    };
+    
+    setPrescriptions([newPrescription, ...prescriptions]);
+    setPrescriptionFormOpen(false);
+  };
+
+  // Dummy data for medicines - should match the one in PrescriptionForm
+  const dummyMedicines = [
+    { id: 1, name: 'Paracetamol 500mg', unit: 'Viên' },
+    { id: 2, name: 'Amoxicillin 500mg', unit: 'Viên' },
+    { id: 3, name: 'Panadol Extra', unit: 'Viên' },
+    { id: 4, name: 'Efferalgan 500mg', unit: 'Viên' },
+    { id: 5, name: 'Tiffy', unit: 'Viên' },
+  ];
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -70,12 +113,6 @@ const PatientDetails = ({ open, onClose, patient }) => {
   const medicalHistory = [
     { id: 1, date: '2023-05-20', diagnosis: 'Cảm cúm', doctor: 'BS. Nguyễn Văn A', notes: 'Sốt nhẹ, đau họng' },
     { id: 2, date: '2023-04-15', diagnosis: 'Viêm họng cấp', doctor: 'BS. Trần Thị B', notes: 'Đau họng, khó nuốt' },
-  ];
-
-  // Dummy prescription history - replace with actual data from API
-  const prescriptionHistory = [
-    { id: 1, date: '2023-05-20', medicine: 'Paracetamol 500mg', dosage: '1 viên/lần, ngày 3 lần', duration: '5 ngày' },
-    { id: 2, date: '2023-04-15', medicine: 'Amoxicillin 500mg', dosage: '1 viên/lần, ngày 2 lần', duration: '7 ngày' },
   ];
 
   return (
@@ -169,6 +206,20 @@ const PatientDetails = ({ open, onClose, patient }) => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
+          <Box display="flex" justifyContent="flex-end" mb={2}>
+            <Tooltip title="Tạo đơn thuốc mới">
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={handleOpenPrescriptionForm}
+                sx={{ mb: 2 }}
+              >
+                Tạo đơn thuốc
+              </Button>
+            </Tooltip>
+          </Box>
+          
           <TableContainer component={Paper} variant="outlined">
             <Table>
               <TableHead>
@@ -180,10 +231,10 @@ const PatientDetails = ({ open, onClose, patient }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {prescriptionHistory.length > 0 ? (
-                  prescriptionHistory.map((prescription) => (
+                {prescriptions.length > 0 ? (
+                  prescriptions.map((prescription) => (
                     <TableRow key={prescription.id} hover>
-                      <TableCell>{new Date(prescription.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(prescription.date).toLocaleDateString('vi-VN')}</TableCell>
                       <TableCell>{prescription.medicine}</TableCell>
                       <TableCell>{prescription.dosage}</TableCell>
                       <TableCell>{prescription.duration}</TableCell>
@@ -191,12 +242,19 @@ const PatientDetails = ({ open, onClose, patient }) => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} align="center">Không có dữ liệu</TableCell>
+                    <TableCell colSpan={4} align="center">Chưa có đơn thuốc nào</TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </TableContainer>
+          
+          <PrescriptionForm
+            open={prescriptionFormOpen}
+            onClose={handleClosePrescriptionForm}
+            patient={patient}
+            onSubmit={handleSubmitPrescription}
+          />
         </TabPanel>
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>

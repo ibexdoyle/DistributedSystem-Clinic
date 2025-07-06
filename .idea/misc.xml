@@ -5,10 +5,20 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/backend/api-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/auth-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/eureka-server/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/staff-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/report-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/billing-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/patient-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/medicine-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/appointment-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/notification-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/prescription-service/pom.xml" />
       </list>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_24" default="true" project-jdk-name="24" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="24" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>

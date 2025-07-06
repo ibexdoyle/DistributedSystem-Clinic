@@ -1,33 +1,16 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Grid,
-  Chip,
-  Avatar,
-  Divider,
-  Card,
-  CardContent
+import { useNavigate, Link } from 'react-router-dom';
+import { 
+  Box, Button, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
+  TableHead, TableRow, TablePagination, TextField, Dialog, DialogTitle, 
+  DialogContent, DialogActions, Grid, IconButton, Divider, Chip, Avatar, Card, CardContent, InputAdornment
 } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import AddIcon from '@mui/icons-material/Add';
 import {
   Search as SearchIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
   Visibility as VisibilityIcon,
   Close as CloseIcon,
   ArrowBack as ArrowBackIcon,
@@ -50,12 +33,13 @@ const mockPatients = [
     records: [
       {
         id: 101,
-        date: '2023-05-15',
+        date: new Date().toISOString().split('T')[0], // Today's date
         doctor: 'BS. Trần Văn B',
         diagnosis: 'Viêm họng cấp',
         symptoms: 'Đau họng, sốt nhẹ, khó nuốt',
         treatment: 'Kê đơn thuốc kháng sinh, hạ sốt',
-        notes: 'Tái khám sau 7 ngày nếu không đỡ'
+        notes: 'Tái khám sau 7 ngày nếu không đỡ',
+        prescription: false
       },
       {
         id: 102,
@@ -64,7 +48,8 @@ const mockPatients = [
         diagnosis: 'Cảm cúm thông thường',
         symptoms: 'Sốt, đau đầu, sổ mũi',
         treatment: 'Thuốc cảm, hạ sốt',
-        notes: 'Nghỉ ngơi, uống nhiều nước'
+        notes: 'Nghỉ ngơi, uống nhiều nước',
+        prescription: true
       }
     ]
   },
@@ -72,6 +57,7 @@ const mockPatients = [
 ];
 
 const MedicalRecords = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +73,16 @@ const MedicalRecords = () => {
     treatment: '',
     notes: ''
   });
-
+  const [isCreatingPrescription, setIsCreatingPrescription] = useState(false);
+  const [openPrescriptionDialog, setOpenPrescriptionDialog] = useState(false);
+  const [prescriptionForm, setPrescriptionForm] = useState({
+    diagnosis: '',
+    note: '',
+    medicines: [
+      { id: 1, name: '', dosage: '', frequency: '', duration: '' }
+    ]
+  });
+  const navigate = useNavigate();
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -107,6 +102,11 @@ const MedicalRecords = () => {
     setSelectedPatient(patient);
     setView('patient');
     setOpenDialog(true);
+  };
+
+  const isToday = (dateString) => {
+    const today = new Date().toISOString().split('T')[0];
+    return dateString === today;
   };
 
   const handleViewRecord = (record) => {
@@ -130,22 +130,137 @@ const MedicalRecords = () => {
       (patient.patientId && patient.patientId.toLowerCase().includes(searchLower))
     );
   });
-
-  const navigate = useNavigate();
   
-  const handleCreatePrescription = (patient) => {
-    // Chuyển hướng đến trang tạo đơn thuốc với ID bệnh nhân
-    navigate(`/doctor/prescriptions/new?patientId=${patient.id}`, {
-      state: {
-        patient: {
-          id: patient.id,
-          name: patient.name,
-          age: patient.age,
-          gender: patient.gender
-        },
-        appointmentId: selectedRecord?.id // Truyền ID lịch hẹn nếu có
-      }
+  const handleOpenPrescriptionDialog = () => {
+    // Khởi tạo form rỗng
+    setPrescriptionForm({
+      diagnosis: '',
+      note: '',
+      medicines: [
+        { id: Date.now(), name: '', dosage: '', frequency: '', duration: '' }
+      ]
     });
+    setOpenPrescriptionDialog(true);
+  };
+
+  const handleClosePrescriptionDialog = () => {
+    setOpenPrescriptionDialog(false);
+  };
+
+  const handleAddMedicine = () => {
+    setPrescriptionForm(prev => ({
+      ...prev,
+      medicines: [
+        ...prev.medicines,
+        { id: Date.now(), name: '', dosage: '', frequency: '', duration: '' }
+      ]
+    }));
+  };
+
+  const handleRemoveMedicine = (id) => {
+    if (prescriptionForm.medicines.length <= 1) return;
+    setPrescriptionForm(prev => ({
+      ...prev,
+      medicines: prev.medicines.filter(med => med.id !== id)
+    }));
+  };
+
+  const handleMedicineChange = (id, field, value) => {
+    setPrescriptionForm(prev => ({
+      ...prev,
+      medicines: prev.medicines.map(med => 
+        med.id === id ? { ...med, [field]: value } : med
+      )
+    }));
+  };
+
+  const handlePrescriptionFormChange = (e) => {
+    const { name, value } = e.target;
+    setPrescriptionForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmitPrescription = async (e) => {
+    e.preventDefault();
+    if (isCreatingPrescription) return;
+    
+    console.log('Đang tạo đơn thuốc với dữ liệu:', prescriptionForm);
+    
+    setIsCreatingPrescription(true);
+    
+    try {
+      // Giả lập thời gian chờ để tạo đơn thuốc
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Tạo ID ngẫu nhiên cho đơn thuốc mới
+      const newPrescriptionId = Math.floor(Math.random() * 10000);
+      
+      // Tạo đơn thuốc mẫu
+      const newPrescription = {
+        id: newPrescriptionId,
+        patientId: selectedPatient.id,
+        recordId: selectedRecord.id,
+        date: new Date().toISOString().split('T')[0],
+        status: 'draft',
+        diagnosis: prescriptionForm.diagnosis,
+        note: prescriptionForm.note,
+        medicines: prescriptionForm.medicines.filter(m => m.name.trim() !== ''),
+        createdAt: new Date().toISOString()
+      };
+      
+      console.log('Đã tạo đơn thuốc mẫu:', newPrescription);
+      
+      // Hiển thị thông báo thành công
+      enqueueSnackbar('Tạo đơn thuốc thành công!', { 
+        variant: 'success',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        }
+      });
+      
+      // Cập nhật trạng thái đơn thuốc trong hồ sơ
+      const updatedPatients = mockPatients.map(p => {
+        if (p.id === selectedPatient.id) {
+          const updatedRecords = p.records.map(r => {
+            if (r.id === selectedRecord.id) {
+              return { 
+                ...r, 
+                prescription: true,
+                prescriptionId: newPrescriptionId
+              };
+            }
+            return r;
+          });
+          return { ...p, records: updatedRecords };
+        }
+        return p;
+      });
+      
+      console.log('Đã cập nhật danh sách bệnh nhân:', updatedPatients);
+      
+      // Đóng dialog và cập nhật giao diện
+      handleClosePrescriptionDialog();
+      setSelectedRecord(prev => ({
+        ...prev,
+        prescription: true,
+        prescriptionId: newPrescriptionId
+      }));
+      
+    } catch (error) {
+      console.error('Lỗi khi tạo đơn thuốc:', error);
+      enqueueSnackbar(`Có lỗi xảy ra khi tạo đơn thuốc: ${error.message}`, { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        }
+      });
+    } finally {
+      setIsCreatingPrescription(false);
+    }
   };
 
   const handleCreateNewRecord = () => {
@@ -419,14 +534,41 @@ const MedicalRecords = () => {
                   <Typography variant="subtitle2" color="textSecondary">Chẩn đoán</Typography>
                   <Typography>{selectedRecord.diagnosis}</Typography>
                 </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary">Điều trị</Typography>
-                  <Typography>{selectedRecord.treatment}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary">Ghi chú</Typography>
-                  <Typography>{selectedRecord.notes || 'Không có ghi chú'}</Typography>
-                </Grid>
+                {selectedRecord.treatment && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="textSecondary">Điều trị</Typography>
+                    <Typography>{selectedRecord.treatment}</Typography>
+                  </Grid>
+                )}
+                {selectedRecord.notes && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="textSecondary">Ghi chú</Typography>
+                    <Typography>{selectedRecord.notes}</Typography>
+                  </Grid>
+                )}
+                {/* Nút Xem đơn thuốc - Hiển thị nếu đã có đơn thuốc */}
+                {selectedRecord.prescription && (
+                  <Grid item xs={12} sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      startIcon={<VisibilityIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Ngăn chặn sự kiện click lan ra ngoài
+                        navigate(`/doctor/prescriptions/${selectedRecord.prescriptionId || selectedRecord.id}`, { 
+                          state: { 
+                            patient: selectedPatient,
+                            record: selectedRecord,
+                            isEditable: selectedRecord.date === new Date().toISOString().split('T')[0]
+                          } 
+                        });
+                      }}
+                      sx={{ ml: 1 }}
+                    >
+                      Xem đơn thuốc
+                    </Button>
+                  </Grid>
+                )}
               </Grid>
             </Box>
           )}
@@ -437,25 +579,25 @@ const MedicalRecords = () => {
             Đóng
           </Button>
           {view === 'patient' && selectedPatient && (
-            <>
-              <Button 
-                variant="outlined" 
-                color="primary"
-                onClick={() => handleCreatePrescription(selectedPatient)}
-                startIcon={<LocalPharmacyIcon />}
-                sx={{ mr: 1 }}
-              >
-                Kê đơn thuốc
-              </Button>
-              <Button 
-                variant="contained" 
-                color="primary"
-                onClick={() => setOpenNewRecordDialog(true)}
-                sx={{ ml: 1 }}
-              >
-                Tạo hồ sơ mới
-              </Button>
-            </>
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={() => setOpenNewRecordDialog(true)}
+            >
+              Tạo hồ sơ mới
+            </Button>
+          )}
+          {view === 'record' && selectedRecord && isToday(selectedRecord.date) && !selectedRecord.prescription && (
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={handleOpenPrescriptionDialog}
+              startIcon={<LocalPharmacyIcon />}
+              disabled={isCreatingPrescription}
+              sx={{ ml: 1 }}
+            >
+              {isCreatingPrescription ? 'Đang tạo...' : 'Kê đơn thuốc'}
+            </Button>
           )}
         </DialogActions>
       </Dialog>
@@ -534,6 +676,132 @@ const MedicalRecords = () => {
             Lưu hồ sơ
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Dialog kê đơn thuốc */}
+      <Dialog 
+        open={openPrescriptionDialog} 
+        onClose={handleClosePrescriptionDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <form onSubmit={handleSubmitPrescription}>
+          <DialogTitle>Kê đơn thuốc</DialogTitle>
+          <DialogContent dividers>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Chẩn đoán"
+                  name="diagnosis"
+                  value={prescriptionForm.diagnosis}
+                  onChange={handlePrescriptionFormChange}
+                  required
+                  margin="normal"
+                />
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Danh sách thuốc
+                </Typography>
+                
+                {prescriptionForm.medicines.map((medicine) => (
+                  <Box key={medicine.id} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item xs={12} sm={5}>
+                        <TextField
+                          fullWidth
+                          label="Tên thuốc"
+                          value={medicine.name}
+                          onChange={(e) => handleMedicineChange(medicine.id, 'name', e.target.value)}
+                          required
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={6} sm={2}>
+                        <TextField
+                          fullWidth
+                          label="Liều dùng"
+                          value={medicine.dosage}
+                          onChange={(e) => handleMedicineChange(medicine.id, 'dosage', e.target.value)}
+                          required
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={6} sm={2}>
+                        <TextField
+                          fullWidth
+                          label="Số lần/ngày"
+                          value={medicine.frequency}
+                          onChange={(e) => handleMedicineChange(medicine.id, 'frequency', e.target.value)}
+                          required
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={8} sm={2}>
+                        <TextField
+                          fullWidth
+                          label="Số ngày"
+                          value={medicine.duration}
+                          onChange={(e) => handleMedicineChange(medicine.id, 'duration', e.target.value)}
+                          required
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={4} sm={1} sx={{ textAlign: 'center' }}>
+                        <IconButton 
+                          onClick={() => handleRemoveMedicine(medicine.id)}
+                          disabled={prescriptionForm.medicines.length <= 1}
+                          color="error"
+                        >
+                          <CloseIcon />
+                        </IconButton>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                ))}
+                
+                <Button 
+                  variant="outlined" 
+                  startIcon={<AddIcon />}
+                  onClick={handleAddMedicine}
+                  fullWidth
+                  sx={{ mt: 1 }}
+                >
+                  Thêm thuốc
+                </Button>
+                
+                <TextField
+                  fullWidth
+                  label="Ghi chú"
+                  name="note"
+                  value={prescriptionForm.note}
+                  onChange={handlePrescriptionFormChange}
+                  multiline
+                  rows={3}
+                  margin="normal"
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={handleClosePrescriptionDialog}
+              disabled={isCreatingPrescription}
+            >
+              Hủy
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained" 
+              color="primary"
+              disabled={isCreatingPrescription}
+            >
+              {isCreatingPrescription ? 'Đang lưu...' : 'Lưu đơn thuốc'}
+            </Button>
+          </DialogActions>
+        </form>
       </Dialog>
     </Box>
   );

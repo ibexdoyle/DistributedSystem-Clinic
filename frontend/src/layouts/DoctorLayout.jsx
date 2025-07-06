@@ -28,7 +28,6 @@ import {
   Event as EventIcon,
   People as PeopleIcon,
   LocalHospital as MedicalRecordsIcon,
-  Assignment as PrescriptionIcon,
   Assignment as AssignmentIcon,
   Logout as LogoutIcon,
   AccountCircle as AccountCircleIcon,
@@ -90,9 +89,7 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 const menuItems = [
   { text: 'Tổng quan', icon: <DashboardIcon />, path: '/doctor/dashboard' },
   { text: 'Lịch hẹn', icon: <EventIcon />, path: '/doctor/appointments' },
-  { text: 'Bệnh nhân', icon: <PeopleIcon />, path: '/doctor/patients' },
   { text: 'Hồ sơ bệnh án', icon: <AssignmentIcon />, path: '/doctor/medical-records' },
-  { text: 'Đơn thuốc', icon: <PrescriptionIcon />, path: '/doctor/prescriptions' },
 ];
 
 const DoctorLayout = () => {

@@ -42,6 +42,7 @@ const menuItems = [
   { text: 'Bệnh nhân', icon: <PeopleIcon />, path: '/admin/patients' },
   { text: 'Lịch hẹn', icon: <EventNoteIcon />, path: '/admin/appointments' },
   { text: 'Đơn thuốc', icon: <ReceiptIcon />, path: '/admin/prescriptions' },
+  { text: 'Quản lý Thuốc', icon: <LocalHospitalIcon />, path: '/admin/medicines' },
   { text: 'Quản lý tài khoản', icon: <PeopleIcon />, path: '/admin/users' },
 ];
 
