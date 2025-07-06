@@ -1,5 +1,8 @@
 package com.example.staff_service.controller;
 
+import com.example.staff_service.dto.request.RequestCreateStaff;
+import com.example.staff_service.dto.request.RequestUpdateStaff;
+import com.example.staff_service.dto.response.ResponseStaff;
 import com.example.staff_service.model.Staff;
 import com.example.staff_service.service.StaffService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,22 +20,23 @@ public class StaffController {
     private StaffService staffService;
 
     @PostMapping
-    public ResponseEntity<Staff> createStaff(@RequestBody Staff staff) {
+    public ResponseEntity<ResponseStaff> createStaff(@RequestBody RequestCreateStaff staff) {
         return ResponseEntity.ok(staffService.createStaff(staff));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Staff> updateStaff(@PathVariable Long id, @RequestBody Staff staff) {
+    public ResponseEntity<ResponseStaff> updateStaff(@PathVariable Long id, @RequestBody RequestUpdateStaff staff) {
         return ResponseEntity.ok(staffService.updateStaff(id, staff));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Staff> getStaffById(@PathVariable Long id) {
+    public ResponseEntity<ResponseStaff> getStaffById(@PathVariable Long id) {
         return ResponseEntity.ok(staffService.getStaffById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Staff>> getAllStaff() {
+    public ResponseEntity<List<ResponseStaff>> getAllStaff() {
+
         return ResponseEntity.ok(staffService.getAllStaff());
     }
 

@@ -1,0 +1,51 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/auth_service_db?useSSL=false&serverTimezone=UTC
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+
+#  # Nếu bạn dùng Spring Security Resource Server (JWT)
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#        # Không cần nếu bạn dùng custom decoder
+#        # jwk-set-uri: http://localhost:8081/.well-known/jwks.json
+#        # Nếu bạn dùng CustomReactiveJwtDecoder thì phần này có thể bỏ
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+jwt:
+  signer-key: "Q1V/fLdExbIjkVheKTzzFWgrGAv7HVoWl3ZTbzR1E8nE2C2Ah/XWwVOH0d6sS3W/VbQ7tf61w6K2/6MWd6ecgA=="
+  expiration: 86400000  # 1 ngày (ms)
+  validity: 36000
+  refreshValidity: 864000
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

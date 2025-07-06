@@ -15,8 +15,7 @@ public class AppointmentResponse {
     private Long id;
     private Long patientId;
     private Long doctorId;
-    private LocalDate date;
-    private LocalTime time;
+    private LocalDateTime appointmentDateTime;
     private Appointment.Status status;
     private String reason;
     private LocalDateTime createdAt;

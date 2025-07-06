@@ -22,8 +22,7 @@ public class Appointment {
     private Long patientId;
     private Long doctorId;
 
-    private LocalDate date;
-    private LocalTime time;
+    private LocalDateTime appointmentDateTime;
 
     @Enumerated(EnumType.STRING)
     private Status status;

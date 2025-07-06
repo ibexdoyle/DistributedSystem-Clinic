@@ -14,6 +14,7 @@ public class AppointmentProducer {
     private KafkaTemplate<String, AppointmentCreatedEvent> kafkaTemplate;
 
     public void sendEvent(AppointmentCreatedEvent event) {
+
         kafkaTemplate.send(TOPIC, event);
     }
 }

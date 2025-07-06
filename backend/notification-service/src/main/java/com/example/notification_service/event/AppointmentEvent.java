@@ -6,8 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -17,6 +16,5 @@ public class AppointmentEvent{
     private Long appointmentId;
     private Long patientId;
     private Long doctorId;
-    private LocalDate date;
-    private LocalTime time;
+    private LocalDateTime appointmentDateTime;
 }

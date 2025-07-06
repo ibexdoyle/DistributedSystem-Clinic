@@ -7,4 +7,5 @@ import java.util.List;
 public interface NotificationService {
     List<Notification> getByPatient(Long patientId);
     List<Notification> getByDoctor(Long doctorId);
+
 }

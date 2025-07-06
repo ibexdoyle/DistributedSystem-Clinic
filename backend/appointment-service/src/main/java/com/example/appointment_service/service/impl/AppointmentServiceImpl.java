@@ -30,22 +30,21 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = Appointment.builder()
                 .patientId(req.getPatientId())
                 .doctorId(req.getDoctorId())
-                .date(req.getDate())
-                .time(req.getTime())
+                .appointmentDateTime(LocalDateTime.now())
                 .reason(req.getReason())
                 .status(Appointment.Status.SCHEDULED)
                 .createdAt(LocalDateTime.now())
                 .build();
 
         Appointment saved = appointmentRepository.save(appointment);
+
         // Gửi event
         appointmentProducer.sendEvent(
                 AppointmentCreatedEvent.builder()
                         .appointmentId(saved.getId())
                         .patientId(saved.getPatientId())
                         .doctorId(saved.getDoctorId())
-                        .date(saved.getDate())
-                        .time(saved.getTime())
+                        .appointmentDateTime(saved.getAppointmentDateTime())
                         .build()
         );
 
@@ -72,16 +71,22 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<AppointmentResponse> getByDate(LocalDate date) {
-        return appointmentRepository.findByDate(date).stream().map(this::map).collect(Collectors.toList());
+        LocalDateTime start = date.atStartOfDay(); // 00:00
+        LocalDateTime end = start.plusDays(1);     // đến trước ngày hôm sau
+
+        return appointmentRepository.findByDateBetween(start, end)
+                .stream()
+                .map(this::map)
+                .collect(Collectors.toList());
     }
+
 
     private AppointmentResponse map(Appointment a) {
         return AppointmentResponse.builder()
                 .id(a.getId())
                 .patientId(a.getPatientId())
                 .doctorId(a.getDoctorId())
-                .date(a.getDate())
-                .time(a.getTime())
+                .appointmentDateTime(a.getAppointmentDateTime())
                 .status(a.getStatus())
                 .reason(a.getReason())
                 .createdAt(a.getCreatedAt())

@@ -1,9 +1,10 @@
 package com.example.staff_service.model;
 
-import com.example.staff_service.enums.Role;
+import com.example.staff_service.enums.StaffRole;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 
@@ -20,6 +21,8 @@ public class Staff {
     private Long id;
 
     private String fullName;
+    private LocalDate dob;
+    private String gender;
 
     @Column(unique = true)
     private String email;
@@ -27,7 +30,7 @@ public class Staff {
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
-    private Role role;
+    private StaffRole staffRole;
 
     private String department;
 

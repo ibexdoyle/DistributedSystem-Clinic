@@ -2,6 +2,7 @@ package com.example.notification_service.consumer;
 
 import com.example.notification_service.event.AppointmentEvent;
 import com.example.notification_service.model.Notification;
+import com.example.notification_service.model.enums.NotificationStatus;
 import com.example.notification_service.repository.NotificationRepository;
 import com.example.notification_service.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +39,12 @@ public class AppointmentConsumer {
                 .appointmentId(event.getAppointmentId())
                 .patientId(event.getPatientId())
                 .doctorId(event.getDoctorId())
-                .message("Bạn có lịch khám vào " + event.getDate() + " lúc " + event.getTime())
-                .date(event.getDate())
-                .time(event.getTime())
+                .type("PATIENT")
+                .title("Lịch khám với bác sĩ")
+                .message("Bạn có lịch khám vào " + event.getAppointmentDateTime().toLocalDate() + " lúc " +
+                        event.getAppointmentDateTime().toLocalTime())
+                .status(NotificationStatus.PENDING)
+                .scheduledTime(event.getAppointmentDateTime().minusHours(2))
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -48,9 +52,12 @@ public class AppointmentConsumer {
                 .appointmentId(event.getAppointmentId())
                 .patientId(event.getPatientId())
                 .doctorId(event.getDoctorId())
-                .message("Bạn có lịch khám với bệnh nhân vào " + event.getDate() + " lúc " + event.getTime())
-                .date(event.getDate())
-                .time(event.getTime())
+                .type("DOCTOR")
+                .title("Bệnh nhân mới vừa đặt lịch khám")
+                .message("Bạn có lịch khám với bệnh nhân vào " +event.getAppointmentDateTime().toLocalDate() + " lúc " +
+                        event.getAppointmentDateTime().toLocalTime())
+                .status(NotificationStatus.PENDING)
+                .scheduledTime(event.getAppointmentDateTime().minusHours(2))
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -62,7 +69,8 @@ public class AppointmentConsumer {
         String patientTopic = "/topic/patient/" + event.getPatientId();
         String doctorTopic = "/topic/doctor/" + event.getDoctorId();
 
-        String message = "Nhắc lịch khám lúc " + event.getTime() + " ngày " + event.getDate();
+        String message = "Nhắc lịch khám lúc " + event.getAppointmentDateTime().toLocalTime() + " ngày "
+                + event.getAppointmentDateTime().toLocalDate();
 
         messagingTemplate.convertAndSend(patientTopic, message);
         messagingTemplate.convertAndSend(doctorTopic, message);
@@ -71,8 +79,10 @@ public class AppointmentConsumer {
         // Gui thông baó qua Gmail
         try {
             String subject = "Nhắc lịch khám bệnh";
-            String patientBody = "Bạn có lịch khám vào " + event.getDate() + " lúc " + event.getTime();
-            String doctorBody = "Bạn có lịch hẹn với bệnh nhân vào " + event.getDate() + " lúc " + event.getTime();
+            String patientBody = "Bạn có lịch khám vào " + event.getAppointmentDateTime().toLocalDate() + " lúc "
+                    + event.getAppointmentDateTime().toLocalTime();
+            String doctorBody = "Bạn có lịch hẹn với bệnh nhân vào " + event.getAppointmentDateTime().toLocalDate() + " lúc "
+                    + event.getAppointmentDateTime().toLocalTime();
 
             // Ví dụ giả lập email - bạn cần fetch email thực qua Feign nếu muốn
             emailService.sendNotification("patient@example.com", subject, patientBody);
