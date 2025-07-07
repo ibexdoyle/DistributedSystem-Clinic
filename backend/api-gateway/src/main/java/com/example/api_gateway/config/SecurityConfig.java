@@ -3,6 +3,7 @@ package com.example.api_gateway.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
@@ -37,39 +38,38 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> {}) // enable CORS
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/swagger-ui.html", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                        .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .pathMatchers("/api/auth/**").permitAll()
+                        .pathMatchers(HttpMethod.OPTIONS).permitAll() // allow preflight CORS
                         .anyExchange().access(permissionAuthorizationManager())
                 )
-                .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwt -> {})
-                )
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}))
                 .build();
     }
 
     public ReactiveAuthorizationManager<AuthorizationContext> permissionAuthorizationManager() {
-        return (Mono<Authentication> authenticationMono, AuthorizationContext context) ->
-                authenticationMono
-                        .map(auth -> {
-                            if (!(auth.getPrincipal() instanceof Jwt jwt)) {
-                                return new AuthorizationDecision(false);
-                            }
+        return (authenticationMono, context) -> authenticationMono.map(auth -> {
+            if (!(auth.getPrincipal() instanceof Jwt jwt)) {
+                return new AuthorizationDecision(false);
+            }
 
-                            String path = context.getExchange().getRequest().getPath().value();
-                            List<String> userPermissions = jwt.getClaimAsStringList("permissions");
-                            String userRole = jwt.getClaimAsString("role");
+            String path = context.getExchange().getRequest().getPath().value();
+            List<String> userPermissions = jwt.getClaimAsStringList("permissions");
+            String userRole = jwt.getClaimAsString("role");
 
-                            boolean permissionMatch = ROUTE_PERMISSIONS.entrySet().stream()
-                                    .filter(entry -> path.startsWith(entry.getKey()))
-                                    .flatMap(entry -> entry.getValue().stream())
-                                    .anyMatch(userPermissions::contains);
+            boolean permissionMatch = ROUTE_PERMISSIONS.entrySet().stream()
+                    .filter(entry -> path.startsWith(entry.getKey()))
+                    .flatMap(entry -> entry.getValue().stream())
+                    .anyMatch(userPermissions::contains);
 
-                            boolean roleMatch = ROUTE_ROLES.entrySet().stream()
-                                    .filter(entry -> path.startsWith(entry.getKey()))
-                                    .flatMap(entry -> entry.getValue().stream())
-                                    .anyMatch(r -> r.equalsIgnoreCase(userRole));
+            boolean roleMatch = ROUTE_ROLES.entrySet().stream()
+                    .filter(entry -> path.startsWith(entry.getKey()))
+                    .flatMap(entry -> entry.getValue().stream())
+                    .anyMatch(r -> r.equalsIgnoreCase(userRole));
 
-                            return new AuthorizationDecision(permissionMatch && roleMatch);
-                        });
+            return new AuthorizationDecision(permissionMatch && roleMatch);
+        });
     }
 }

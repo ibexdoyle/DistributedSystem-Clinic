@@ -9,90 +9,95 @@ spring:
     gateway:
       server:
         webflux:
-          discovery:
-            locator:
-              enabled: true
-              lower-case-service-id: true
+          routes:
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/auth/**
+              filters:
+                - StripPrefix=1
+
+            - id: patient-service
+              uri: lb://patient-service
+              predicates:
+                - Path=/api/patients/**
+              filters:
+                - StripPrefix=1
+
+            - id: staff-service
+              uri: lb://staff-service
+              predicates:
+                - Path=/api/staffs/**
+              filters:
+                - StripPrefix=1
+
+            - id: appointment-service
+              uri: lb://appointment-service
+              predicates:
+                - Path=/api/appointments/**
+              filters:
+                - StripPrefix=1
+
+            - id: prescription-service
+              uri: lb://prescription-service
+              predicates:
+                - Path=/api/prescriptions/**
+              filters:
+                - StripPrefix=1
+
+            - id: medicine-service
+              uri: lb://medicine-service
+              predicates:
+                - Path=/api/medicines/**
+              filters:
+                - StripPrefix=1
+
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/notifications/**
+              filters:
+                - StripPrefix=1
+
+            - id: report-service
+              uri: lb://report-service
+              predicates:
+                - Path=/api/reports/**
+              filters:
+                - StripPrefix=1
+
+            - id: billing-service
+              uri: lb://billing-service
+              predicates:
+                - Path=/api/billings/**
+              filters:
+                - StripPrefix=1
 
           globalcors:
             cors-configurations:
               '[/**]':
-                allowed-origins: "http://localhost:3000"
-                allowed-methods:
+                allowedOrigins:
+                  - "http://localhost:3000"
+                allowedMethods:
                   - GET
                   - POST
                   - PUT
                   - DELETE
-                allowed-headers: "*"
-                allow-credentials: true
-        routes:
-          - id: auth-service
-            uri: lb://auth-service
-            predicates:
-              - Path=/api/auth/**
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
 
-          - id: patient-service
-            uri: lb://patient-service
-            predicates:
-              - Path=/api/patients/**
-            filters:
-              - StripPrefix=1
-
-          - id: staff-service
-            uri: lb://staff-service
-            predicates:
-              - Path=/api/staffs/**
-            filters:
-              - StripPrefix=1
-
-          - id: appointment-service
-            uri: lb://appointment-service
-            predicates:
-              - Path=/api/appointments/**
-            filters:
-              - StripPrefix=1
-
-          - id: prescription-service
-            uri: lb://prescription-service
-            predicates:
-              - Path=/api/prescriptions/**
-            filters:
-              - StripPrefix=1
-
-          - id: medicine-service
-            uri: lb://medicine-service
-            predicates:
-              - Path=/api/medicines/**
-            filters:
-              - StripPrefix=1
-
-          - id: notification-service
-            uri: lb://notification-service
-            predicates:
-              - Path=/api/notifications/**
-            filters:
-              - StripPrefix=1
-
-          - id: report-service
-            uri: lb://report-service
-            predicates:
-              - Path=/api/reports/**
-            filters:
-              - StripPrefix=1
-
-          - id: billing-service
-            uri: lb://billing-service
-            predicates:
-              - Path=/api/billings/**
-            filters:
-              - StripPrefix=1
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
 
   security:
     oauth2:
       resourceserver:
         jwt:
           jwk-set-uri: http://localhost:8081/.well-known/jwks.json
-
 
 eureka:
   client:
@@ -101,11 +106,10 @@ eureka:
 
 logging:
   level:
-    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.gateway: DEBUG
     reactor.netty: WARN
-    org.springframework.web: DEBUG
+    org.springframework.web: INFO
     org.springframework.security: DEBUG
-
 
 springdoc:
   swagger-ui:
@@ -115,5 +119,6 @@ springdoc:
     tagsSorter: alpha
     tryItOutEnabled: true
     filter: true
+
   api-docs:
     enabled: true
