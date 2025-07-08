@@ -10,4 +10,5 @@ public interface PatientService {
     Patient getPatientById(Long id);
     List<Patient> getAllPatients();
     void deletePatient(Long id);
+    Patient findByUserId(Long userId);
 }

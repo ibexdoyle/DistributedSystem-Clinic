@@ -51,4 +51,12 @@ public class PatientServiceImpl implements PatientService {
     public void deletePatient(Long id) {
         patientRepository.deleteById(id);
     }
+
+
+    @Override
+    public Patient findByUserId(Long userId) {
+        return patientRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Patient not found for userId: " + userId));
+    }
+
 }

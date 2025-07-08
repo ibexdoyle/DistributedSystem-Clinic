@@ -4,6 +4,8 @@ import com.example.patient_service.model.Patient;
 import com.example.patient_service.service.PatientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,7 +18,10 @@ public class PatientController {
     private PatientService patientService;
 
     @PostMapping
-    public ResponseEntity<Patient> createPatient(@RequestBody Patient patient) {
+    public ResponseEntity<Patient> createPatient(@RequestBody Patient patient,
+                                                 JwtAuthenticationToken authToken) {
+        Long userId = extractUserId(authToken);
+        patient.setUserId(userId);
         return ResponseEntity.ok(patientService.createPatient(patient));
     }
 
@@ -41,4 +46,18 @@ public class PatientController {
         patientService.deletePatient(id);
         return ResponseEntity.noContent().build();
     }
+
+
+    @GetMapping("/me")
+    public ResponseEntity<Patient> getMyInfo(JwtAuthenticationToken authToken) {
+        Long userId = extractUserId(authToken);
+        return ResponseEntity.ok(patientService.findByUserId(userId));
+    }
+
+
+    private Long extractUserId(JwtAuthenticationToken authToken) {
+        Jwt jwt = authToken.getToken();
+        return Long.valueOf(jwt.getClaimAsString("userId"));
+    }
+
 }
