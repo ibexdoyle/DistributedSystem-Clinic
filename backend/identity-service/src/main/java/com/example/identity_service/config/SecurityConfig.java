@@ -24,10 +24,12 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http.csrf(csrf -> csrf.disable())
+        return http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> {}) // << BẮT BUỘC kích hoạt CORS ở security layer
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/**", // các endpoint public
+                                "/api/auth/login",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
@@ -39,4 +41,5 @@ public class SecurityConfig {
                 )
                 .build();
     }
+
 }

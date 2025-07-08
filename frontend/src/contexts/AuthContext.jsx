@@ -1,82 +1,88 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Check if user is logged in on initial load
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-      setCurrentUser(user);
+    const token = Cookies.get("token");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUser(decoded);
+      } catch (err) {
+        console.error("Token không hợp lệ:", err);
+        Cookies.remove("token");
+      }
     }
-    setLoading(false);
+    setIsLoading(false);
   }, []);
 
-  // Danh sách tài khoản cố định để test
-  const mockUsers = [
-    { username: 'patient1', password: '123456', role: 'patient', name: 'Nguyễn Văn A' },
-    { username: 'doctor1', password: '123456', role: 'doctor', name: 'BS. Trần Thị B' },
-    { username: 'admin', password: 'admin123', role: 'admin', name: 'Quản trị viên' }
-  ];
+ const login = async ({ email, password }) => {
+    try {
+      const response = await fetch("http://localhost:8081/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({ email, password })
+      });
 
-  const login = useCallback(async (userData) => {
-    // Tìm user trong danh sách mock (không kiểm tra role nữa)
-    const user = mockUsers.find(u => 
-      u.username === userData.username && 
-      u.password === userData.password
-    );
+      const text = await response.text();
 
-    if (!user) {
-      throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
+      if (!response.ok) {
+        let message = "Đăng nhập thất bại.";
+        try {
+          const data = JSON.parse(text);
+          message = data.message || message;
+        } catch {
+          if (response.status === 403) {
+            message = "Tài khoản hoặc mật khẩu không đúng.";
+          }
+        }
+        throw new Error(message);
+      }
+
+      const data = JSON.parse(text);
+
+      if (!data.token) throw new Error("Token không hợp lệ");
+
+      Cookies.set("token", data.token, { expires: 7 });
+
+      const decoded = jwtDecode(data.token);
+      setUser(decoded);
+    } catch (error) {
+      console.error("Lỗi đăng nhập:", error);
+      throw error;
     }
+  };
 
-    // Lưu thông tin user (không lưu mật khẩu)
-    const { password, ...userWithoutPassword } = user;
-    setCurrentUser(userWithoutPassword);
-    localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-    return userWithoutPassword;
-  }, []);
+  const logout = () => {
+    Cookies.remove("token");
+    setUser(null);
+  };
 
-  const logout = useCallback(() => {
-    setCurrentUser(null);
-    localStorage.removeItem('user');
-    // Note: We'll handle navigation in the component that calls logout
-  }, []);
-
-  const updateUserProfile = useCallback(async (userData) => {
-    // Trong thực tế, đây sẽ là lời gọi API đến backend
-    // Ở đây chúng ta chỉ cập nhật trong localStorage và state
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const updatedUser = { ...currentUser, ...userData };
-        setCurrentUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        resolve(updatedUser);
-      }, 500); // Giả lập delay mạng
-    });
-  }, [currentUser]);
-
-  const value = {
-    currentUser,
-    user: currentUser, // Alias for compatibility with existing code
-    login,
-    logout,
-    updateUserProfile,
-    isAuthenticated: !!currentUser,
+  const hasRole = (role) => {
+    return user?.role === role;
   };
 
   return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, login, logout, hasRole, isLoading }}>
+      {" "}
+      {!isLoading && children}{" "}
     </AuthContext.Provider>
   );
-}
+};
 
-export default AuthContext;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth phải được dùng trong AuthProvider");
+  }
+  return context;
+};
