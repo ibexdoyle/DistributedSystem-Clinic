@@ -20,7 +20,7 @@
         <module name="api-gateway" />
         <module name="eureka-server" />
       </profile>
-      <profile name="Annotation profile for staff-service" enabled="true">
+      <profile name="Annotation profile for report-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -30,11 +30,21 @@
         <module name="appointment-service" />
         <module name="prescription-service" />
         <module name="medicine-service" />
-        <module name="staff-service" />
         <module name="report-service" />
-        <module name="patient-service" />
         <module name="notification-service" />
         <module name="billing-service" />
+      </profile>
+      <profile name="Annotation profile for staff-service" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.32/lombok-1.18.32.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.5.5.Final/mapstruct-processor-1.5.5.Final.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct/1.5.5.Final/mapstruct-1.5.5.Final.jar" />
+        </processorPath>
+        <module name="staff-service" />
+        <module name="patient-service" />
       </profile>
     </annotationProcessing>
   </component>

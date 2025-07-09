@@ -8,12 +8,14 @@ import Navbar from './layouts/Navbar';
 import Home from './pages/Home';
 import Footer from './layouts/Footer';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Patients from './pages/Patients';
 import Appointments from './pages/Appointments';
 import Prescriptions from './pages/admin/Prescriptions';
 import Notifications from './pages/Notifications';
 import MyAppointments from './pages/MyAppointments';
 import MyMedicalRecords from './pages/MyMedicalRecords';
+import CreateAppointment from './pages/CreateAppointment';
 import About from './pages/About';
 import Services from './pages/Services';
 import Doctors from './pages/Doctors';
@@ -122,6 +124,7 @@ function MainContent() {
             
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             
             {/* Patient routes */}
             <Route path="/patients" element={
@@ -169,6 +172,12 @@ function MainContent() {
             <Route path="/my-medical-records" element={
               <ProtectedRoute>
                 <MyMedicalRecords />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/appointments/new" element={
+              <ProtectedRoute>
+                <CreateAppointment />
               </ProtectedRoute>
             } />
             

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -17,102 +17,21 @@ import {
   InputAdornment,
   Pagination,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../layouts/Navbar';
-
-const doctors = [
-  {
-    name: 'BS. Nguyễn Văn A',
-    specialty: 'Chuyên khoa Răng Hàm Mặt',
-    experience: '15 năm kinh nghiệm',
-    image: require('../assets/bs1.png'),
-    alt: 'Bác sĩ Nguyễn Văn A',
-  },
-  {
-    name: 'BS. Trần Thị B',
-    specialty: 'Chuyên viên chỉnh nha',
-    experience: '10 năm kinh nghiệm',
-    image: require('../assets/bs2.jpg'),
-    alt: 'Bác sĩ Trần Thị B',
-  },
-  {
-    name: 'BS. Lê Văn C',
-    specialty: 'Chuyên viên phục hình răng',
-    experience: '12 năm kinh nghiệm',
-    image: require('../assets/bs3.jpg'),
-    alt: 'Bác sĩ Lê Văn C',
-  },
-  {
-    name: 'BS. Phạm Thị D',
-    specialty: 'Chuyên viên nha chu',
-    experience: '8 năm kinh nghiệm',
-    image: require('../assets/bs4.jpg'),
-    alt: 'Bác sĩ Phạm Thị D',
-  },
-  {
-    name: 'BS. Nguyễn Văn E',
-    specialty: 'Chuyên khoa Răng Hàm Mặt',
-    experience: '9 năm kinh nghiệm',
-    image: require('../assets/bs5.png'),
-    alt: 'Bác sĩ Nguyễn Văn E',
-  },
-  {
-    name: 'BS. Trần Thị F',
-    specialty: 'Chuyên viên chỉnh nha',
-    experience: '11 năm kinh nghiệm',
-    image: require('../assets/bs6.jpg'),
-    alt: 'Bác sĩ Trần Thị F',
-  },
-  {
-    name: 'BS. Lê Văn G',
-    specialty: 'Chuyên viên phục hình răng',
-    experience: '7 năm kinh nghiệm',
-    image: require('../assets/bs7.jpg'),
-    alt: 'Bác sĩ Lê Văn G',
-  },
-  {
-    name: 'BS. Phạm Thị H',
-    specialty: 'Chuyên viên nha chu',
-    experience: '14 năm kinh nghiệm',
-    image: require('../assets/bs8.jpg'),
-    alt: 'Bác sĩ Phạm Thị H',
-  },
-  {
-    name: 'BS.CK1. Phạm Thị H',
-    specialty: 'Chuyên khoa 1 Nhi - Dinh dưỡng',
-    experience: '14 năm kinh nghiệm',
-    image: require('../assets/bs9.jpg'),
-    alt: 'Bác sĩ Phạm Thị H',
-  },
-  {
-    name: 'GS.TS.BS. Trần Văn G',
-    specialty: 'Chuyên khoa 2 Thần kinh - Đột quỵ',
-    experience: '14 năm kinh nghiệm',
-    image: require('../assets/bs10.jpg'),
-    alt: 'Bác sĩ Phạm Thị H',
-  },
-  {
-    name: 'BS. Phạm Thị P hfj',
-    specialty: 'Chuyên viên nha chu',
-    experience: '14 năm kinh nghiệm',
-    image: require('../assets/bs11.jpg'),
-    alt: 'Bác sĩ Phạm Thị H',
-  },
-  {
-    name: 'BS. Phạm Thị JJN',
-    specialty: 'Chuyên khoa 1 Tai Mũi Họng',
-    experience: '14 năm kinh nghiệm',
-    image: require('../assets/bs12.jpg'),
-    alt: 'Bác sĩ Phạm Thị H',
-  },
-];
+import staffService from '../services/staffService';
 
 const Doctors = () => {
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [openLoginDialog, setOpenLoginDialog] = useState(false);
@@ -123,14 +42,86 @@ const Doctors = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // Filter doctors based on search term (name or specialty)
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:8083/api/staffs', {
+          credentials: 'include', // Include cookies for authentication
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Filter doctors from the staff list (role = DOCTOR)
+        const doctorsList = Array.isArray(data) 
+          ? data.filter(staff => staff.staffRole === 'DOCTOR')
+          : [];
+
+        const doctorsWithImages = doctorsList.map(doctor => ({
+          ...doctor,
+          image: getDoctorImage(doctor.department), // Using department as specialty
+          alt: `Bác sĩ ${doctor.fullName}`,
+          name: `BS. ${doctor.fullName}`,
+          specialty: doctor.department || 'Chuyên khoa',
+          experience: 'Nhiều năm kinh nghiệm' // Default experience text
+        }));
+
+        setDoctors(doctorsWithImages);
+      } catch (err) {
+        console.error('Lỗi khi tải danh sách bác sĩ:', err);
+        setError('Không thể tải danh sách bác sĩ. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
+
+  const getDoctorImage = (department) => {
+    if (!department) {
+      return 'https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg';
+    }
+
+    // Map departments to appropriate images
+    const departmentImages = {
+      'tim mạch': 'https://img.freepik.com/free-photo/portrait-male-doctor-with-stethoscope_23-2149022743.jpg',
+      'nội khoa': 'https://img.freepik.com/free-photo/portrait-female-doctor-with-stethoscope_23-2149022739.jpg',
+      'ngoại khoa': 'https://img.freepik.com/free-photo/portrait-surgeon-with-surgical-mask_23-2148827773.jpg',
+      'nhi khoa': 'https://img.freepik.com/free-photo/portrait-pediatrician-with-stethoscope_23-2149022762.jpg',
+      'sản phụ khoa': 'https://img.freepik.com/free-photo/portrait-female-doctor-with-clipboard_23-2149022749.jpg',
+      'tai mũi họng': 'https://img.freepik.com/free-photo/doctor-with-stethoscope-around-neck_23-2149022742.jpg',
+      'da liễu': 'https://img.freepik.com/free-photo/portrait-female-dermatologist-with-magnifying-glass_23-2149022755.jpg',
+      'răng hàm mặt': 'https://img.freepik.com/free-photo/portrait-male-dentist-white-coat_1303-21211.jpg',
+      'mắt': 'https://img.freepik.com/free-photo/portrait-ophthalmologist-with-ophthalmoscope_23-2149022759.jpg',
+      'xương khớp': 'https://img.freepik.com/free-photo/portrait-orthopedic-surgeon-with-x-ray_23-2149022765.jpg'
+    };
+
+    // Find matching department (case insensitive)
+    const normalizedDept = department.toLowerCase();
+    const matchedDept = Object.keys(departmentImages).find(dept => 
+      normalizedDept.includes(dept)
+    );
+
+    return matchedDept 
+      ? departmentImages[matchedDept]
+      : 'https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg';
+  };
+
   const filteredDoctors = doctors.filter(
-    (doctor) =>
+    doctor =>
       doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentDoctors = filteredDoctors.slice(indexOfFirstItem, indexOfLastItem);
@@ -157,6 +148,7 @@ const Doctors = () => {
 
   const handlePageChange = (event, page) => {
     setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const theme = useTheme();
@@ -171,11 +163,31 @@ const Doctors = () => {
     });
   };
 
-  // Preload all doctor images on component mount
-  React.useEffect(() => {
-    const imageUrls = doctors.map(doctor => doctor.image);
-    preloadImages(imageUrls);
-  }, []);
+  // Preload all doctor images when doctors data changes
+  useEffect(() => {
+    if (doctors.length > 0) {
+      const imageUrls = doctors.map(doctor => doctor.image).filter(Boolean);
+      preloadImages(imageUrls);
+    }
+  }, [doctors]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
+      </Container>
+    );
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -278,7 +290,7 @@ const Doctors = () => {
                   onError={(e) => {
                     console.error(`Failed to load image for ${doctor.name}`);
                     e.target.onerror = null;
-                    e.target.src = 'https://via.placeholder.com/300x300?text=Doctor+Photo';
+                    e.target.src = 'https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg';
                   }}
                   sx={{
                     position: 'absolute',
@@ -384,31 +396,29 @@ const Doctors = () => {
                 </Box>
                 
                 {/* Book Button */}
-                <Box sx={{ mt: 3, width: '100%' }}>
+                <CardActions sx={{ mt: 'auto', p: 0 }}>
                   <Button
                     fullWidth
                     variant="contained"
                     color="primary"
-                    size="medium"
+                    size="large"
                     onClick={() => handleBookAppointment(doctor)}
-                    disabled={!isPatient && !isGuest}
                     sx={{
-                      py: 1,
-                      borderRadius: '8px',
-                      textTransform: 'none',
+                      borderRadius: 0,
+                      py: 1.5,
+                      fontSize: '1rem',
                       fontWeight: 600,
-                      fontSize: '0.9375rem',
-                      boxShadow: 'none',
+                      textTransform: 'none',
+                      letterSpacing: '0.5px',
                       '&:hover': {
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        transform: 'translateY(-1px)'
-                      },
-                      transition: 'all 0.2s ease-in-out'
+                        transform: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      }
                     }}
                   >
-                    {isGuest ? 'Đăng nhập để đặt lịch' : 'Đặt lịch hẹn'}
+                    {isGuest ? 'Đặt lịch ngay' : isPatient ? 'Đặt lịch' : 'Xem chi tiết'}
                   </Button>
-                </Box>
+                </CardActions>
               </CardContent>
             </Card>
           </Box>
@@ -494,7 +504,7 @@ const Doctors = () => {
 // Add default placeholder for doctor images
 const loadFallbackImage = (e) => {
   e.target.onerror = null;
-  e.target.src = 'https://via.placeholder.com/150';
+  e.target.src = 'https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg';
 };
 
 export default Doctors;

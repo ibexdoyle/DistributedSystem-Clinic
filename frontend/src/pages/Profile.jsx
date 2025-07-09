@@ -40,8 +40,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 // Danh sách giới tính
 const genderOptions = [
   { value: 'male', label: 'Nam' },
-  { value: 'female', label: 'Nữ' },
-  { value: 'other', label: 'Khác' }
+  { value: 'female', label: 'Nữ' }
 ];
 
 const Profile = () => {
@@ -62,18 +61,52 @@ const Profile = () => {
   const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        gender: user.gender || "male",
-        dateOfBirth: user.dateOfBirth || ""
-      });
-      
-      if (user.avatar) {
-        setAvatarPreview(user.avatar);
-      }
+    if (user?.email) {
+      fetch(`http://localhost:8082/api/patients?email=${encodeURIComponent(user.email)}`, {
+        headers: { 'x-user-id': user.email }
+      })
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            const patient = data[0];
+            setFormData({
+              name: patient.fullName || '',
+              email: patient.email || user.email,
+              phone: patient.phoneNumber || '',
+              gender: patient.gender || 'male',
+              dateOfBirth: patient.dob ? new Date(patient.dob) : '',
+              address: patient.address || ''
+            });
+            if (patient.avatar) {
+              setAvatarPreview(patient.avatar);
+            }
+          } else {
+            setFormData({
+              name: user.name || '',
+              email: user.email || '',
+              phone: user.phone || '',
+              gender: user.gender || 'male',
+              dateOfBirth: user.dateOfBirth || '',
+              address: user.address || ''
+            });
+            if (user.avatar) {
+              setAvatarPreview(user.avatar);
+            }
+          }
+        })
+        .catch(() => {
+          setFormData({
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            gender: user.gender || 'male',
+            dateOfBirth: user.dateOfBirth || '',
+            address: user.address || ''
+          });
+          if (user.avatar) {
+            setAvatarPreview(user.avatar);
+          }
+        });
     }
   }, [user]);
 
@@ -200,34 +233,6 @@ const Profile = () => {
                     borderColor: 'divider',
                   }}
                 />
-                {isEditing && (
-                  <label htmlFor="avatar-upload">
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={handleFileChange}
-                    />
-                    <Button
-                      variant="contained"
-                      size="small"
-                      component="span"
-                      sx={{
-                        position: 'absolute',
-                        bottom: 8,
-                        right: 8,
-                        minWidth: 'auto',
-                        width: 36,
-                        height: 36,
-                        borderRadius: '50%',
-                        p: 0
-                      }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </Button>
-                  </label>
-                )}
               </Box>
               <Typography variant="h6" fontWeight="bold">
                 {formData.name || 'Chưa cập nhật'}
@@ -287,8 +292,7 @@ const Profile = () => {
                     name="email"
                     type="email"
                     value={formData.email}
-                    onChange={handleChange}
-                    disabled={!isEditing}
+                    disabled={true}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">

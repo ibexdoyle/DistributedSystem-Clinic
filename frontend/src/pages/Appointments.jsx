@@ -34,31 +34,14 @@ import {
   AccessTime as TimeIcon,
   Wc as GenderIcon
 } from '@mui/icons-material';
-
-const departments = [
-    { id: 'emergency', name: 'Cấp cứu' },
-    { id: 'cardiology', name: 'Tim mạch' },
-    { id: 'neurology', name: 'Thần kinh' },
-    { id: 'pediatrics', name: 'Nhi khoa' },
-    { id: 'dermatology', name: 'Da liễu' },
-    { id: 'ent', name: 'Tai mũi họng' },
-];
-
-const doctors = [
-    { id: 'drA', name: 'BS. Nguyễn Văn A', department: 'emergency', departmentName: 'Cấp cứu' },
-    { id: 'drB', name: 'BS. Trần Thị B', department: 'cardiology', departmentName: 'Tim mạch' },
-    { id: 'drC', name: 'BS. Lê Quang C', department: 'neurology', departmentName: 'Thần kinh' },
-    { id: 'drD', name: 'BS. Phạm Thị D', department: 'pediatrics', departmentName: 'Nhi khoa' },
-    { id: 'drE', name: 'BS. Vũ Văn E', department: 'dermatology', departmentName: 'Da liễu' },
-    { id: 'drF', name: 'BS. Lê Thị F', department: 'ent', departmentName: 'Tai mũi họng' },
-];
+import { useAuth } from '../contexts/AuthContext';
 
 const Appointments = () => {
     const theme = useTheme();
+    const { user } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [form, setForm] = useState({
         name: '',
-        email: '',
         phone: '',
         gender: '',
         department: '',
@@ -67,14 +50,68 @@ const Appointments = () => {
         time: '',
         note: ''
     });
+    const [departments, setDepartments] = useState([]);
+    const [doctors, setDoctors] = useState([]);
+    const [patientExists, setPatientExists] = useState(false);
+    const [patientInfo, setPatientInfo] = useState(null);
+    const [success, setSuccess] = useState('');
+    const [error, setError] = useState('');
+
+    // Fetch doctors and extract departments
+    useEffect(() => {
+        fetch('http://localhost:8083/api/staffs')
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                const doctorList = Array.isArray(data) ? data.filter(staff => staff.staffRole === 'DOCTOR' && staff.isActive) : [];
+                setDoctors(doctorList.map(d => ({
+                    id: d.id,
+                    name: d.fullName,
+                    department: d.department
+                })));
+                // Unique department list
+                const deptMap = {};
+                doctorList.forEach(d => {
+                    if (d.department && !deptMap[d.department]) {
+                        deptMap[d.department] = true;
+                    }
+                });
+                setDepartments(Object.keys(deptMap).map(dep => ({ id: dep, name: dep })));
+            })
+            .catch(() => {
+                setDoctors([]);
+                setDepartments([]);
+            });
+    }, []);
 
     // Filter doctors based on selected department
     const filteredDoctors = form.department ?
         doctors.filter(doctor => doctor.department === form.department) :
         [];
-    const [success, setSuccess] = useState('');
-    const [error, setError] = useState('');
-    
+
+    // Kiểm tra patient theo email user khi vào trang (chỉ chạy 1 lần)
+    useEffect(() => {
+        if (user?.email) {
+            fetch(`http://localhost:8082/api/patients?email=${encodeURIComponent(user.email)}`, {
+                headers: { 'x-user-id': user.email }
+            })
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    setPatientExists(true);
+                    setPatientInfo(data[0]);
+                    setForm(f => ({
+                        ...f,
+                        name: data[0].fullName || '',
+                        phone: data[0].phoneNumber || '',
+                        gender: data[0].gender || ''
+                    }));
+                } else {
+                    setPatientExists(false);
+                }
+            })
+            .catch(() => setPatientExists(false));
+        }
+    }, [user]);
 // Auto-clear error messages after 3 seconds
 useEffect(() => {
   if (error) {
@@ -187,11 +224,9 @@ useEffect(() => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // Clear previous messages
         setError('');
         setSuccess('');
-        
+
         // Validate form
         const requiredFields = [
             { field: 'name', label: 'Họ tên' },
@@ -202,77 +237,133 @@ useEffect(() => {
             { field: 'date', label: 'Ngày khám' },
             { field: 'time', label: 'Khung giờ khám' }
         ];
-
         const missingField = requiredFields.find(item => !form[item.field]);
         if (missingField) {
             setError(`Vui lòng nhập ${missingField.label.toLowerCase()}!`);
             return;
         }
-        
-        // Check if selected date is Sunday (closed)
         if (isSelectedDateSunday) {
             setError('Chủ nhật bệnh viện không làm việc. Vui lòng chọn ngày khác.');
             return;
         }
-        
-        // Check if selected time is within working hours
         if (isOutsideWorkingHours) {
             setError('Giờ khám ngoài giờ làm việc. Vui lòng chọn giờ từ 8h-18h (T2-T6) hoặc 8h-12h (T7).');
             return;
         }
-        
-        // Check if no time slots are available
         if (availableTimes.length === 0) {
             setError('Không còn lịch trống. Vui lòng chọn bác sĩ, ngày hoặc giờ khác.');
             return;
         }
-        
-        // Phone number validation
         const phoneRegex = /^(\+?84|0)[1-9][0-9]{8}$/;
         if (!phoneRegex.test(form.phone)) {
             setError('Số điện thoại không hợp lệ!');
             return;
         }
-        
-        // Email validation if provided
         if (form.email && !/\S+@\S+\.\S+/.test(form.email)) {
             setError('Email không hợp lệ!');
             return;
         }
-        
         setIsSubmitting(true);
         setError('');
-        
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            // Save to mock DB
-            addAppointment({
-                patient: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).username : form.name,
-                gender: form.gender,
-                department: form.department,
-                departmentName: getDepartmentName(form.department),
-                doctor: form.doctor,
-                doctorName: doctors.find(d => d.id === form.doctor)?.name || '',
-                date: form.date,
-                time: form.time,
-                note: form.note,
-                status: 'Chờ xác nhận',
-                email: form.email
+            // 1. Kiểm tra patient theo email
+            let patientId = null;
+            let patientInfo = null;
+            // Tự động lấy email từ user đăng nhập nếu form.email rỗng
+const userEmail = form.email || user?.email || userEmail;
+if (!form.email && user?.email) {
+    form.email = user.email;
+}
+            // Nếu đã có patient, tự động fill form và disable các trường cá nhân
+            const patientRes = await fetch(`http://localhost:8082/api/patients?email=${encodeURIComponent(userEmail)}`, {
+                headers: {
+                    'x-user-id': userEmail
+                }
             });
-            
-            setSuccess('Đặt lịch khám thành công! Vui lòng kiểm tra email để xác nhận cuộc hẹn.');
-            setForm({ 
-                name: '', 
-                email: '', 
-                phone: '', 
+            if (patientRes.ok) {
+                const data = await patientRes.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    // Đã có patient
+                    patientId = data[0].id;
+                    patientInfo = data[0];
+                    // Tự động fill form và disable trường cá nhân
+                    setForm(prev => ({
+                        ...prev,
+                        name: data[0].fullName || '',
+                        phone: data[0].phoneNumber || '',
+                        gender: data[0].gender || '',
+                        dob: data[0].dob || '',
+                        email: data[0].email || userEmail
+                    }));
+                    setPatientExists(true);
+                } else {
+                    // Chưa có patient, tạo mới
+                    const createRes = await fetch('http://localhost:8082/api/patients', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-user-id': userEmail
+                        },
+                        body: JSON.stringify({
+                            fullName: form.name,
+                            dob: form.dob || null,
+                            gender: form.gender,
+                            email: form.email,
+                            phoneNumber: form.phone,
+                            address: form.address || '',
+                            medicalHistory: '',
+                            userId: 0
+                        })
+                    });
+                    if (!createRes.ok) throw new Error('Không thể tạo mới thông tin bệnh nhân!');
+                    const newPatient = await createRes.json();
+                    patientId = newPatient.id;
+                    patientInfo = newPatient;
+                }
+            } else {
+                setError('Không thể kiểm tra thông tin bệnh nhân!');
+                setIsSubmitting(false);
+                return;
+            }
+            // 2. Tạo lịch hẹn
+            const appointmentRes = await fetch('http://localhost:8084/api/appointments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-id': userEmail
+                },
+                body: JSON.stringify({
+                    patientId,
+                    doctorId: form.doctor,
+                    doctorName: doctors.find(d => d.id === form.doctor)?.name || '',
+                    medicalSpecialty: departments.find(d => d.id === form.department)?.name || '',
+                    reason: form.note,
+                    appointmentDate: form.date,
+                    appointmentTime: form.time,
+                    email: user?.email || userEmail // Thêm trường email
+                })
+            });
+            if (!appointmentRes.ok) {
+    let backendMsg = '';
+    try {
+        const errorData = await appointmentRes.json();
+        backendMsg = errorData?.message || JSON.stringify(errorData);
+    } catch (e) {
+        backendMsg = await appointmentRes.text();
+    }
+    console.error('Backend error:', backendMsg);
+    throw new Error('Không thể tạo lịch hẹn! ' + backendMsg);
+}
+            setSuccess('Đặt lịch khám thành công!');
+            setForm({
+                name: '',
+                phone: '',
                 gender: '',
-                department: '', 
-                doctor: '', 
-                date: '', 
-                time: '', 
-                note: '' 
+                department: '',
+                doctor: '',
+                date: '',
+                time: '',
+                note: ''
             });
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err) {
@@ -450,6 +541,7 @@ useEffect(() => {
                                     required
                                     size="small"
                                     margin="normal"
+                                    disabled={patientExists}
                                     sx={{ 
                                         '& .MuiOutlinedInput-root': {
                                             '&:hover fieldset': {
@@ -480,6 +572,7 @@ useEffect(() => {
                                         name="gender"
                                         value={form.gender}
                                         onChange={handleChange}
+                                        disabled={patientExists}
                                         sx={{
                                             '& .MuiButtonBase-root': {
                                                 color: theme.palette.primary.main,
@@ -550,6 +643,7 @@ useEffect(() => {
                                     required
                                     size="small"
                                     margin="normal"
+                                    disabled={patientExists}
                                     placeholder="0987 654 321"
                                     sx={{ 
                                         '& .MuiOutlinedInput-root': {
@@ -569,35 +663,7 @@ useEffect(() => {
                                         ),
                                     }}
                                 />
-                                {/* Email */}
-                                <TextField
-                                    label="Email"
-                                    name="email"
-                                    type="email"
-                                    value={form.email}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    size="small"
-                                    margin="normal"
-                                    placeholder="example@email.com"
-                                    sx={{ 
-                                        '& .MuiOutlinedInput-root': {
-                                            '&:hover fieldset': {
-                                                borderColor: 'primary.main',
-                                            },
-                                            '&.Mui-focused fieldset': {
-                                                borderColor: 'primary.main',
-                                            },
-                                        },
-                                    }}
-                                    InputProps={{
-                                        startAdornment: (
-                                            <InputAdornment position="start" sx={{ color: 'text.secondary', mr: 1 }}>
-                                                <EmailIcon fontSize="small" />
-                                            </InputAdornment>
-                                        ),
-                                    }}
-                                />
+                                
 
                                 {/* Date */}
                                 <FormControl fullWidth margin="normal" required>

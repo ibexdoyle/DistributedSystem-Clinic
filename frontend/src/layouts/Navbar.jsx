@@ -51,8 +51,7 @@ import {
 
 // Các mục menu theo vai trò
 const menuItemsByRole = {
-  common: [],
-  patient: [
+  common: [
     {
       label: "Đặt lịch khám",
       path: "/appointments",
@@ -69,18 +68,8 @@ const menuItemsByRole = {
       icon: <MedicalInformationIcon fontSize="small" />
     }
   ],
-  doctor: [
-    {
-      label: "Quản lý lịch hẹn",
-      path: "/appointments",
-      icon: <EventAvailableIcon fontSize="small" />
-    },
-    {
-      label: "Hồ sơ bệnh nhân",
-      path: "/patients",
-      icon: <MedicalInformationIcon fontSize="small" />
-    }
-  ],
+  patient: [],
+  doctor: [],
   admin: [
     {
       label: "Quản lý hệ thống",
@@ -396,30 +385,43 @@ const Navbar = () => {
                   open={Boolean(anchorEl)}
                   onClose={handleCloseUserMenu}
                 >
-                  {getMenuItems(user?.role).map((item) => (
-                    <UserMenuItem
-                      key={item.path}
-                      component={Link}
-                      to={item.path}
-                      onClick={handleCloseUserMenu}
-                    >
-                      <ListItemIcon>{item.icon}</ListItemIcon>
-                      <ListItemText>{item.label}</ListItemText>
-                    </UserMenuItem>
-                  ))}
-                  <MenuItem onClick={handleProfileClick}>
-                    <ListItemIcon>
-                      <PersonIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Thông tin cá nhân</ListItemText>
-                  </MenuItem>
+                  <UserMenuItem
+                    component={Link}
+                    to="/appointments"
+                    onClick={handleCloseUserMenu}
+                  >
+                    <ListItemIcon><EventAvailableIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText>Đặt lịch khám</ListItemText>
+                  </UserMenuItem>
+                  <UserMenuItem
+                    component={Link}
+                    to="/my-appointments"
+                    onClick={handleCloseUserMenu}
+                  >
+                    <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText>Quản lý lịch khám</ListItemText>
+                  </UserMenuItem>
+                  <UserMenuItem
+                    component={Link}
+                    to="/my-medical-records"
+                    onClick={handleCloseUserMenu}
+                  >
+                    <ListItemIcon><MedicalInformationIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText>Hồ sơ bệnh án</ListItemText>
+                  </UserMenuItem>
                   <Divider />
-                  <MenuItem onClick={handleLogout}>
-                    <ListItemIcon>
-                      <LogoutIcon fontSize="small" />
-                    </ListItemIcon>
+                  <UserMenuItem
+                    component={Link}
+                    to="/profile"
+                    onClick={handleCloseUserMenu}
+                  >
+                    <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText>Thông tin cá nhân</ListItemText>
+                  </UserMenuItem>
+                  <UserMenuItem onClick={handleLogout}>
+                    <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
                     <ListItemText>Đăng xuất</ListItemText>
-                  </MenuItem>
+                  </UserMenuItem>
                 </UserMenu>
 
                 {/* Notification Menu */}
@@ -522,11 +524,15 @@ const Navbar = () => {
               /* Appointment button - Only show for non-logged in users */
               <AppointmentButton
                 variant="contained"
+                color="primary"
+                startIcon={<EventAvailableIcon />}
                 component={Link}
-                to="/appointments"
-                onClick={handleAppointmentClick}
+                to={{
+                  pathname: "/login",
+                  state: { from: "/appointments/new" }
+                }}
               >
-                Đặt lịch hẹn
+                Đặt lịch khám
               </AppointmentButton>
             )}
 
@@ -663,7 +669,10 @@ const Navbar = () => {
               ) : (
                 <MobileMenuItem
                   component={Link}
-                  to="/login"
+                  to={{
+                    pathname: "/login",
+                    state: { from: "/appointments/new" }
+                  }}
                   fullWidth
                   onClick={handleDrawerToggle}
                 >

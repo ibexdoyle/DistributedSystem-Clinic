@@ -802,28 +802,30 @@ const Home = () => {
         <Box sx={{ textAlign: 'center', mt: 4, mb: 8 }}>
             <Button 
                 component={Link}
-                to="/doctors"
+                to={{
+                  pathname: "/login",
+                  state: { from: "/appointments/new" }
+                }}
                 variant="contained"
                 color="primary"
                 size="large"
                 sx={{
-                    px: 4,
-                    py: 1.5,
-                    borderRadius: '50px',
-                    textTransform: 'none',
-                    fontWeight: 'bold',
-                    fontSize: '1.1rem',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
-                    },
-                    transition: 'all 0.3s ease',
+                  mt: 2,
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: '50px',
+                  textTransform: 'none',
+                  fontSize: '1.1rem',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                  '&:hover': {
+                    boxShadow: '0 6px 25px rgba(0, 0, 0, 0.2)',
+                    transform: 'translateY(-2px)'
+                  },
+                  transition: 'all 0.3s ease'
                 }}
-            >
-                Xem thêm
-                
-            </Button>
+              >
+                Đăng nhập / Đăng ký
+              </Button>
         </Box>
     </Box>
 
