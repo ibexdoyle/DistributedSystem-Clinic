@@ -27,7 +27,6 @@ public class Patient {
     @Column(unique = true)
     private String email;
 
-    private Long userId;
 
     @Column(name = "phone_number")
     private String phoneNumber;

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -19,17 +20,21 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public Patient createPatient(Patient patient) {
+        Optional<Patient> userCreated= patientRepository.findByEmail(patient.getEmail());
+        if(userCreated.isPresent()){
+            return userCreated.get();
+        }
+
         return patientRepository.save(patient);
     }
 
     @Override
-    public Patient updatePatient(Long id, Patient updated) {
-        Patient patient = patientRepository.findById(id)
+    public Patient updatePatient(Patient updated, String email) {
+        Patient patient = patientRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
         patient.setFullName(updated.getFullName());
         patient.setDob(updated.getDob());
         patient.setGender(updated.getGender());
-        patient.setEmail(updated.getEmail());
         patient.setPhoneNumber(updated.getPhoneNumber());
         patient.setAddress(updated.getAddress());
         patient.setMedicalHistory(updated.getMedicalHistory());
@@ -54,9 +59,9 @@ public class PatientServiceImpl implements PatientService {
 
 
     @Override
-    public Patient findByUserId(Long userId) {
-        return patientRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Patient not found for userId: " + userId));
+    public Patient findByUserEmail(String email) {
+        return patientRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found for userId: " + email));
     }
 
 }

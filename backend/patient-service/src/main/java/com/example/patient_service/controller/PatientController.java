@@ -17,17 +17,25 @@ public class PatientController {
     @Autowired
     private PatientService patientService;
 
+//    @PostMapping
+//    public ResponseEntity<Patient> createPatient(@RequestBody Patient patient,
+//                                                 JwtAuthenticationToken authToken) {
+//        Long userId = extractUserId(authToken);
+//        patient.setUserId(userId);
+//        return ResponseEntity.ok(patientService.createPatient(patient));
+//    }
+
     @PostMapping
     public ResponseEntity<Patient> createPatient(@RequestBody Patient patient,
-                                                 JwtAuthenticationToken authToken) {
-        Long userId = extractUserId(authToken);
-        patient.setUserId(userId);
+                                                 @RequestHeader("X-User-Id") String userEmail) {
+        patient.setEmail(userEmail);
         return ResponseEntity.ok(patientService.createPatient(patient));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Patient> updatePatient(@PathVariable Long id, @RequestBody Patient patient) {
-        return ResponseEntity.ok(patientService.updatePatient(id, patient));
+
+    @PutMapping()
+    public ResponseEntity<Patient> updatePatient(@RequestBody Patient patient,@RequestHeader("X-User-Id") String userEmail) {
+        return ResponseEntity.ok(patientService.updatePatient(patient, userEmail));
     }
 
     @GetMapping("/{id}")
@@ -49,15 +57,14 @@ public class PatientController {
 
 
     @GetMapping("/me")
-    public ResponseEntity<Patient> getMyInfo(JwtAuthenticationToken authToken) {
-        Long userId = extractUserId(authToken);
-        return ResponseEntity.ok(patientService.findByUserId(userId));
+    public ResponseEntity<Patient> getMyInfo(@RequestHeader("X-User-Id") String userEmail) {
+        return ResponseEntity.ok(patientService.findByUserEmail(userEmail));
     }
 
 
-    private Long extractUserId(JwtAuthenticationToken authToken) {
-        Jwt jwt = authToken.getToken();
-        return Long.valueOf(jwt.getClaimAsString("userId"));
-    }
+//    private Long extractUserId(JwtAuthenticationToken authToken) {
+//        Jwt jwt = authToken.getToken();
+//        return Long.valueOf(jwt.getClaimAsString("userId"));
+//    }
 
 }

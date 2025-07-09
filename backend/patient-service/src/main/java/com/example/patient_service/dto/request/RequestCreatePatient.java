@@ -23,5 +23,4 @@ public class RequestCreatePatient {
     private String phoneNumber;
 
     private String address;
-    private String medicalHistory;
 }

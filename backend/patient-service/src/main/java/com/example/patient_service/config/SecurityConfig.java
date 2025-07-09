@@ -20,11 +20,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/**"
+                                "/api/patients/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                // ✅ Sử dụng Customizer thay vì lambda hoặc jwt() trực tiếp
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 
         return http.build();
