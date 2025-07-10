@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Container, 
   Typography, 
@@ -16,38 +16,48 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material';
+import { useAuth } from '../contexts/AuthContext';
 
 const MyMedicalRecords = () => {
-  // Mock data - Thay thế bằng dữ liệu thực từ API
-  const medicalRecords = [
-    {
-      id: 1,
-      date: '24/05/2024',
-      doctor: 'BS. Nguyễn Văn A',
-      diagnosis: 'Viêm họng cấp',
-      prescription: 'Thuốc kháng sinh, giảm đau',
-      note: 'Uống thuốc đúng giờ, tái khám sau 5 ngày',
-      medicines: [
-        { id: 1, name: 'Thuốc kháng sinh', quantity: '2 viên/lần', usage: 'Uống 3 lần/ngày' },
-        { id: 2, name: 'Thuốc giảm đau', quantity: '1 viên/lần', usage: 'Uống khi cần' }
-      ]
-    },
-    {
-      id: 2,
-      date: '15/04/2024',
-      doctor: 'BS. Trần Thị B',
-      diagnosis: 'Cảm cúm thông thường',
-      prescription: 'Thuốc hạ sốt, vitamin C',
-      note: 'Nghỉ ngơi nhiều, uống đủ nước',
-      medicines: [
-        { id: 1, name: 'Thuốc hạ sốt', quantity: '1 viên/lần', usage: 'Uống khi cần' },
-        { id: 2, name: 'Vitamin C', quantity: '1 viên/lần', usage: 'Uống 1 lần/ngày' }
-      ]
-    }
-  ];
-
+  const { user } = useAuth();
+  const [patientInfo, setPatientInfo] = useState(null);
+  const [medicalRecords, setMedicalRecords] = useState([]);
   const [prescriptionDialogOpen, setPrescriptionDialogOpen] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState(null);
+
+  useEffect(() => {
+    const fetchPatientInfo = async () => {
+      try {
+        const res = await fetch(`http://localhost:8082/api/patients?email=${encodeURIComponent(user?.email)}`);
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setPatientInfo(data[0]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch patient info', err);
+      }
+    };
+
+    if (user?.email) {
+      fetchPatientInfo();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const fetchMedicalRecords = async () => {
+      try {
+        const res = await fetch(`http://localhost:8084/api/medical-records?patientId=${patientInfo?.id}`);
+        const data = await res.json();
+        setMedicalRecords(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Failed to fetch medical records', err);
+      }
+    };
+
+    if (patientInfo?.id) {
+      fetchMedicalRecords();
+    }
+  }, [patientInfo]);
 
   const handleOpenPrescriptionDialog = (record) => {
     setPrescriptionDialogOpen(true);
@@ -58,7 +68,15 @@ const MyMedicalRecords = () => {
     setPrescriptionDialogOpen(false);
     setSelectedPrescription(null);
   };
-
+  const formatDate = (dateString) => {
+    if (!dateString) return '---';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+  
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
@@ -72,23 +90,23 @@ const MyMedicalRecords = () => {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           <Box sx={{ minWidth: '180px', mb: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ lineHeight: 1.2, mb: 0.5 }}>Mã bệnh nhân</Typography>
-            <Typography sx={{ fontWeight: 'bold', color: 'primary.main', whiteSpace: 'nowrap' }}>BN123456</Typography>
+            <Typography sx={{ fontWeight: 'bold', color: 'primary.main', whiteSpace: 'nowrap' }}>{patientInfo?.id || '---'}</Typography>
           </Box>
           <Box sx={{ minWidth: '180px', mb: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ lineHeight: 1.2, mb: 0.5 }}>Họ và tên</Typography>
-            <Typography sx={{ whiteSpace: 'nowrap' }}>Nguyễn Văn An</Typography>
+            <Typography sx={{ whiteSpace: 'nowrap' }}>{patientInfo?.fullName || '---'}</Typography>
           </Box>
           <Box sx={{ minWidth: '120px', mb: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ lineHeight: 1.2, mb: 0.5 }}>Ngày sinh</Typography>
-            <Typography sx={{ whiteSpace: 'nowrap' }}>01/01/1990</Typography>
-          </Box>
+            <Typography sx={{ whiteSpace: 'nowrap' }}>{formatDate(patientInfo?.dob)}</Typography>
+            </Box>
           <Box sx={{ minWidth: '80px', mb: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ lineHeight: 1.2, mb: 0.5 }}>Giới tính</Typography>
-            <Typography sx={{ whiteSpace: 'nowrap' }}>Nam</Typography>
+            <Typography sx={{ whiteSpace: 'nowrap' }}>{patientInfo?.gender === 'male' ? 'Nam' : patientInfo?.gender === 'female' ? 'Nữ' : 'Khác'}</Typography>
           </Box>
           <Box sx={{ minWidth: '140px', mb: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ lineHeight: 1.2, mb: 0.5 }}>Số điện thoại</Typography>
-            <Typography sx={{ whiteSpace: 'nowrap' }}>0901234567</Typography>
+            <Typography sx={{ whiteSpace: 'nowrap' }}>{patientInfo?.phoneNumber || '---'}</Typography>
           </Box>
         </Box>
       </Paper>

@@ -224,9 +224,14 @@ const Appointments = () => {
             '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
             '16:00', '16:30', '17:00', '17:30'
         ].filter(t => {
-            // Only show times within working hours that haven't been booked
-            return isWithinWorkingHours(form.date, t) && 
-                   !getAllAppointments().some(a => a.doctor === form.doctor && a.date === form.date && a.time === t);
+            // Chỉ show các khung giờ trong giờ làm việc và chưa bị đặt (dựa trên dữ liệu API, chỉ tính slot chưa bị huỷ)
+            return isWithinWorkingHours(form.date, t) &&
+                !appointments.some(a =>
+                    String(a.doctorId || a.doctor) === String(form.doctor)
+                    && (a.appointmentDate === form.date || a.date === form.date)
+                    && (a.appointmentTime === t || a.time === t)
+                    && !['CANCELLED', 'REJECTED'].includes((a.status || '').toUpperCase())
+                );
         }) :
         [];
 
@@ -262,6 +267,17 @@ const Appointments = () => {
         }
         if (isOutsideWorkingHours) {
             setError('Giờ khám ngoài giờ làm việc. Vui lòng chọn giờ từ 8h-18h (T2-T6) hoặc 8h-12h (T7).');
+            return;
+        }
+        // Kiểm tra trùng lịch trước khi gửi
+        const isDuplicate = appointments.some(a =>
+            String(a.doctorId || a.doctor) === String(form.doctor)
+            && (a.appointmentDate === form.date || a.date === form.date)
+            && (a.appointmentTime === form.time || a.time === form.time)
+            && !['CANCELLED', 'REJECTED'].includes((a.status || '').toUpperCase())
+        );
+        if (isDuplicate) {
+            setError('Khung giờ này đã có lịch hẹn. Vui lòng chọn khung giờ khác.');
             return;
         }
         if (availableTimes.length === 0) {
