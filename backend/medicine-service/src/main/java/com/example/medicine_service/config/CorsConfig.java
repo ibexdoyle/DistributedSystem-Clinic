@@ -1,4 +1,4 @@
-package com.example.appointment_service.config;
+package com.example.medicine_service.config;
 
 
 import org.springframework.context.annotation.Bean;
@@ -14,12 +14,12 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:3000") 
+                registry.addMapping("/**") // Cho tất cả endpoint
+                        .allowedOrigins("http://localhost:3000") // Domain frontend
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
-                        .exposedHeaders("*")
-                        .allowCredentials(true);
+                        .exposedHeaders("*") // Nếu muốn frontend truy cập headers phản hồi
+                        .allowCredentials(true); // Cho phép gửi cookie, Authorization, v.v.
             }
         };
     }
