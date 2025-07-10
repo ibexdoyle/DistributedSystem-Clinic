@@ -61,6 +61,7 @@ const Profile = () => {
   const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
+    console.log('Current user in Profile:', user);
     if (user?.email) {
       fetch(`http://localhost:8082/api/patients?email=${encodeURIComponent(user.email)}`, {
         headers: { 'x-user-id': user.email }

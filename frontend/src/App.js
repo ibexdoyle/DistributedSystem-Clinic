@@ -50,7 +50,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   }
   
   // Kiểm tra quyền admin nếu cần
-  if (adminOnly && user?.role !== 'admin') {
+  if (adminOnly && user?.role !== 'ADMIN') {
     return <Navigate to="/not-found" replace />;
   }
   
@@ -66,7 +66,7 @@ const DoctorRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (user.role !== 'doctor') {
+  if (user.role !== 'DOCTOR') {
     return <Navigate to="/not-found" replace />;
   }
 
@@ -82,14 +82,15 @@ function MainContent() {
   
   // Redirect to appropriate dashboard based on role after login
   useEffect(() => {
-    if (user && location.pathname === '/') {
-      if (user.role === 'doctor') {
-        navigate('/doctor/dashboard');
-      } else if (user.role === 'admin') {
-        navigate('/admin');
-      }
+    if (!user || location.pathname !== '/') return;
+  
+    if (user.role === 'DOCTOR') {
+      navigate('/doctor/dashboard');
+    } else if (user.role === 'ADMIN') {
+      navigate('/admin');
     }
-  }, [user, location, navigate]);
+  }, [user, location.pathname, navigate]);
+  
   
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -129,7 +130,7 @@ function MainContent() {
             {/* Patient routes */}
             <Route path="/patients" element={
               <ProtectedRoute>
-                {user?.role === 'doctor' ? (
+                {user?.role === 'DOCTOR' ? (
                   <Navigate to="/doctor/patients" replace />
                 ) : (
                   <Patients />
@@ -139,7 +140,7 @@ function MainContent() {
             
             <Route path="/appointments" element={
               <ProtectedRoute>
-                {user?.role === 'doctor' ? (
+                {user?.role === 'DOCTOR' ? (
                   <Navigate to="/doctor/appointments" replace />
                 ) : (
                   <Appointments />
@@ -149,7 +150,7 @@ function MainContent() {
             
             <Route path="/prescriptions" element={
               <ProtectedRoute>
-                {user?.role === 'doctor' ? (
+                {user?.role === 'DOCTOR' ? (
                   <Navigate to="/doctor/prescriptions" replace />
                 ) : (
                   <Prescriptions />

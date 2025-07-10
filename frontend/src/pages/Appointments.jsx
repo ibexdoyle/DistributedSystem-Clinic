@@ -56,6 +56,8 @@ const Appointments = () => {
     const [patientInfo, setPatientInfo] = useState(null);
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
+    // State cho danh sách lịch hẹn
+    const [appointments, setAppointments] = useState([]);
 
     // Fetch doctors and extract departments
     useEffect(() => {
@@ -81,6 +83,17 @@ const Appointments = () => {
                 setDoctors([]);
                 setDepartments([]);
             });
+    }, []);
+
+    // Fetch danh sách lịch hẹn khi vào trang
+    useEffect(() => {
+        fetch('http://localhost:8084/api/appointments')
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                // Nếu trả về object đơn lẻ thì chuyển thành mảng
+                setAppointments(Array.isArray(data) ? data : [data]);
+            })
+            .catch(() => setAppointments([]));
     }, []);
 
     // Filter doctors based on selected department
@@ -112,25 +125,26 @@ const Appointments = () => {
             .catch(() => setPatientExists(false));
         }
     }, [user]);
-// Auto-clear error messages after 3 seconds
-useEffect(() => {
-  if (error) {
-    const timer = setTimeout(() => {
-      setError('');
-    }, 5000);
-    return () => clearTimeout(timer);
-  }
-}, [error]);
 
-// Add this new useEffect to auto-clear success messages after 3 seconds
-useEffect(() => {
-  if (success) {
-    const timer = setTimeout(() => {
-      setSuccess('');
-    }, 5000);
-    return () => clearTimeout(timer);
-  }
-}, [success]);
+    // Auto-clear error messages after 3 seconds
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => {
+                setError('');
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
+    // Add this new useEffect to auto-clear success messages after 3 seconds
+    useEffect(() => {
+        if (success) {
+            const timer = setTimeout(() => {
+                setSuccess('');
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [success]);
 
     const handleChange = e => {
         const { name, value } = e.target;
@@ -270,10 +284,10 @@ useEffect(() => {
             let patientId = null;
             let patientInfo = null;
             // Tự động lấy email từ user đăng nhập nếu form.email rỗng
-const userEmail = form.email || user?.email || userEmail;
-if (!form.email && user?.email) {
-    form.email = user.email;
-}
+            const userEmail = form.email || user?.email || userEmail;
+            if (!form.email && user?.email) {
+                form.email = user.email;
+            }
             // Nếu đã có patient, tự động fill form và disable các trường cá nhân
             const patientRes = await fetch(`http://localhost:8082/api/patients?email=${encodeURIComponent(userEmail)}`, {
                 headers: {

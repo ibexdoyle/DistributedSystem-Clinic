@@ -26,8 +26,22 @@ const Login = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const from = location.state?.from?.pathname || "/";
+
+  // Điều hướng khi user context đổi
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'DOCTOR' || user.role === 'doctor') {
+        navigate('/doctor/dashboard', { replace: true });
+      } else if (user.role === 'ADMIN' || user.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
+    }
+    // eslint-disable-next-line
+  }, [user]);
 
   // Check for success message from registration
   useEffect(() => {
@@ -62,49 +76,18 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) {
-      setError("Vui lòng nhập địa chỉ email.");
-      return;
-    } else if (!emailRegex.test(email)) {
-      setError("Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại.");
+    if (!email || !password) {
+      setError('Vui lòng nhập đầy đủ thông tin!');
       return;
     }
-
-    if (!password) {
-      setError("Vui lòng nhập mật khẩu.");
-      return;
-    }
-
     setIsLoading(true);
-
+    setError('');
+    setSuccessMessage('');
     try {
-      console.log('Attempting login...');
-      const loggedInUser = await login({ email, password });
-      console.log('Login successful, redirecting...');
-      // Redirect by role
-      if (loggedInUser.role === 'DOCTOR') {
-        navigate('/doctor', { replace: true });
-      } else if (loggedInUser.role === 'ADMIN') {
-        navigate('/admin', { replace: true });
-      } else {
-        navigate(from, { replace: true });
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      // Make sure we have a user-friendly error message
-      const errorMessage = err.message || "Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.";
-      setError(errorMessage);
-      
-      // Auto-hide error after 5 seconds
-      const timer = setTimeout(() => {
-        setError("");
-      }, 5000);
-      
-      return () => clearTimeout(timer);
+      await login({ email, password });
+      // Không navigate ở đây, sẽ navigate trong useEffect khi user context đổi
+    } catch (error) {
+      setError(error.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản và mật khẩu.');
     } finally {
       setIsLoading(false);
     }

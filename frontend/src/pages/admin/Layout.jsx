@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   Box, 
   Drawer, 
@@ -66,10 +67,12 @@ const Layout = ({ children }) => {
     setAnchorEl(null);
   };
 
+  const { logout } = useAuth();
   const handleLogout = () => {
-    // Xử lý đăng xuất
+    logout();
     navigate('/login');
   };
+
 
   const drawer = (
     <div>

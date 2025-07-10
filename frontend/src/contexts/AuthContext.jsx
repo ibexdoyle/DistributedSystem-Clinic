@@ -32,6 +32,16 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
+    // Xóa user cũ và token trước khi login mới
+    Cookies.remove("token");
+    setUser(null);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('userPermissions');
+      localStorage.removeItem('user');
+    }
     try {
       console.log('Đang thử đăng nhập với:', credentials);
       let response;
@@ -100,7 +110,13 @@ export const AuthProvider = ({ children }) => {
       };
       
       setUser(userData);
-      
+      // Lưu thông tin user mới vào localStorage
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('userEmail', userData.email || '');
+        localStorage.setItem('userRole', userData.role || '');
+        localStorage.setItem('userData', JSON.stringify(userData));
+        localStorage.setItem('userPermissions', JSON.stringify(userData.permissions || []));
+      }
       return userData;
     } catch (error) {
       console.error("Lỗi đăng nhập:", error);
@@ -118,6 +134,13 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     Cookies.remove("token");
     setUser(null);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('userPermissions');
+      localStorage.removeItem('user');
+    }
   };
 
   const hasRole = (role) => {

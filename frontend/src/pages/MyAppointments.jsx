@@ -47,7 +47,7 @@ import {
   MedicalServices as MedicalServicesIcon
 } from '@mui/icons-material';
 import { format, parseISO, isBefore, isAfter, addDays } from 'date-fns';
-import { getAppointmentsByPatient, getAllAppointments, cancelAppointment } from '../mock/appointmentsDB';
+// import { getAppointmentsByPatient, getAllAppointments, cancelAppointment } from '../mock/appointmentsDB';
 
 // Hàm hỗ trợ cho accessibility của các tab
 function a11yProps(index) {
@@ -87,49 +87,113 @@ function TabPanel(props) {
 }
 
 const MyAppointments = () => {
-  const username = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).username : '';
+  let user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+  if (!user) {
+    // Nếu chưa có user, tạo user demo để dev test nhanh
+    user = {
+      email: 'user@gmail.com',
+      name: 'Người dùng',
+      role: 'USER',
+      permissions: ['VIEW_APPOINTMENT', 'CREATE_APPOINTMENT'],
+    };
+    localStorage.setItem('user', JSON.stringify(user));
+  }
+  const username = user && user.username ? user.username : '';
   const [appointments, setAppointments] = useState([]);
+  const [patients, setPatients] = useState([]); // Danh sách bệnh nhân để map patientId sang name
+
+  // Fetch danh sách bệnh nhân khi mount
+  useEffect(() => {
+    fetch('http://localhost:8082/api/patients')
+      .then(res => res.ok ? res.json() : Promise.reject('Error fetching patients'))
+      .then(data => setPatients(Array.isArray(data) ? data : [data]))
+      .catch(() => setPatients([]));
+  }, []);
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [patientInfo, setPatientInfo] = useState(null);
+  const [patientDetail, setPatientDetail] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   useEffect(() => {
-    // Giả lập việc tải dữ liệu
-    const timer = setTimeout(() => {
-      setAppointments(getAppointmentsByPatient(username));
+    setLoading(true);
+    // Dùng biến user đã khai báo ở đầu component
+    const email = user && user.email ? user.email : null;
+    if (email) {
+      console.log('Step 1: email from user:', email);
+      fetch(`http://localhost:8082/api/patients?email=${encodeURIComponent(email)}`, {
+        headers: { 'x-user-id': email }
+      })
+        .then(res => res.ok ? res.json() : Promise.reject('Error fetching patient by email'))
+        .then(data => {
+          console.log('Step 2: patient API response:', data);
+          if (Array.isArray(data) && data.length > 0) {
+            const patientId = data[0].id;
+            console.log('Step 3: found patientId:', patientId);
+            fetch(`http://localhost:8084/api/appointments/patient/${patientId}`, {
+              headers: { 'X-User-Id': email }
+            })
+              .then(res => res.ok ? res.json() : Promise.reject('Error fetching appointments by patientId'))
+              .then(data => {
+                console.log('Step 4: appointments API response:', data);
+                const appts = Array.isArray(data) ? data : [data];
+                setAppointments(appts);
+                setLoading(false);
+              })
+              .catch((err) => {
+                console.error('Step 4 error:', err);
+                setAppointments([]);
+                setLoading(false);
+              });
+          } else {
+            console.warn('Step 3: No patient found for email');
+            setAppointments([]);
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          console.error('Step 2 error:', err);
+          setAppointments([]);
+          setLoading(false);
+        });
+    } else {
+      console.warn('Step 1: No email found in user');
+      setAppointments([]);
       setLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [username]);
+    }
+  }, []);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
 
   // Phân loại lịch hẹn
+  // Chỉ lấy các lịch sắp tới có status SCHEDULED
   const upcomingAppointments = appointments.filter(appt => {
-    const apptDate = new Date(appt.date);
+    const apptDate = new Date(appt.appointmentDateTime);
     apptDate.setHours(0, 0, 0, 0);
-    return apptDate >= today && appt.status !== 'Đã hủy' && appt.status !== 'Đã khám';
+    return apptDate >= today && appt.status === 'SCHEDULED';
   });
 
-  const pastAppointments = appointments.filter(appt => {
-    const apptDate = new Date(appt.date);
-    apptDate.setHours(0, 0, 0, 0);
-    return apptDate < today || appt.status === 'Đã khám' || appt.status === 'Đã hủy';
-  });
+  // Lịch sử chỉ lấy các lịch đã hoàn thành hoặc đã hủy
+  const pastAppointments = appointments.filter(appt => appt.status === 'COMPLETED' || appt.status === 'CANCELLED');
 
   const handleDetailClick = (appointment) => {
     setSelectedAppointment(appointment);
-    // Không cần lấy từ localStorage nữa vì đã có trong appointment
     setDetailOpen(true);
+    setPatientDetail(null);
+    if (appointment && appointment.patientId) {
+      fetch(`http://localhost:8082/api/patients/${appointment.patientId}`)
+        .then(res => res.ok ? res.json() : Promise.reject('Error fetching patient detail'))
+        .then(data => {
+          setPatientDetail(data);
+        })
+        .catch(() => setPatientDetail(null));
+    }
   };
 
   const handleCancelClick = (appointment) => {
@@ -137,17 +201,39 @@ const MyAppointments = () => {
     setCancelOpen(true);
   };
 
-  const handleConfirmCancel = (reason) => {
+  const handleConfirmCancel = () => {
     if (selectedAppointment) {
-      cancelAppointment(selectedAppointment.id, reason);
-      setAppointments(getAppointmentsByPatient(username));
-      setSnackbar({
-        open: true,
-        message: 'Đã hủy lịch hẹn thành công',
-        severity: 'success'
-      });
+      fetch(`http://localhost:8084/api/appointments/${selectedAppointment.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ appointmentId: selectedAppointment.id, status: 'CANCELLED' }),
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Cancel failed');
+          // Sau khi hủy thành công, reload lại danh sách
+          return fetch(`http://localhost:8084/api/appointments/patient/${selectedAppointment.patientId}`);
+        })
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(data => {
+          setAppointments(Array.isArray(data) ? data : [data]);
+          setSnackbar({
+            open: true,
+            message: 'Đã hủy lịch hẹn thành công',
+            severity: 'success'
+          });
+        })
+        .catch(() => {
+          setSnackbar({
+            open: true,
+            message: 'Hủy lịch thất bại',
+            severity: 'error'
+          });
+        });
     }
   };
+
 
   const handleCloseDetail = () => {
     setDetailOpen(false);
@@ -170,6 +256,7 @@ const MyAppointments = () => {
           <TableRow sx={{ backgroundColor: (theme) => theme.palette.grey[100] }}>
             <TableCell sx={{ fontWeight: 'bold' }}>Chuyên khoa</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>Bác sĩ</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>Họ tên</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>Ngày hẹn</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>Giờ</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>Ghi chú</TableCell>
@@ -179,37 +266,46 @@ const MyAppointments = () => {
         </TableHead>
         <TableBody>
           {appointmentsList.length > 0 ? (
-            appointmentsList.map(row => (
-              <TableRow key={row.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell>
-                  <Typography variant="body2" color="primary" fontWeight="medium">
-                    {row.specialty || 'Không xác định'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="subtitle2">{row.doctorName || row.doctor}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {row.doctorId || ''}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {new Date(row.date).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip 
-                    label={row.time} 
-                    size="small" 
-                    variant="outlined"
-                    color="primary"
-                  />
-                </TableCell>
-                <TableCell sx={{ maxWidth: '200px' }}>
-                  <Typography variant="body2" noWrap>
-                    {row.note || '-'}
-                  </Typography>
-                </TableCell>
+            appointmentsList.map(row => {
+              // Tìm bệnh nhân theo patientId
+              const patient = patients.find(
+                p => String(p.id) === String(row.patientId) || String(p.patientId) === String(row.patientId)
+              );
+              if (!patient && row.patientId && patients.length > 0) {
+                console.warn('Không tìm thấy bệnh nhân cho patientId:', row.patientId, patients);
+              }
+              return (
+                <TableRow key={row.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell>
+                    <Typography variant="body2" color="primary" fontWeight="medium">
+                      {row.medicalSpecialty || 'Không xác định'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="subtitle2">{row.doctorName || '-'}</Typography>
+                  </TableCell>
+                  <TableCell>
+                  <Typography variant="body2">{patient ? patient.fullName : '--'}</Typography>
+
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {row.appointmentDateTime ? format(parseISO(row.appointmentDateTime), 'EEEE, dd/MM/yyyy', { locale: vi }) : ''}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={row.appointmentDateTime ? format(parseISO(row.appointmentDateTime), 'HH:mm') : ''} 
+                      size="small" 
+                      variant="outlined"
+                      color="primary"
+                    />
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: '200px' }}>
+                    <Typography variant="body2" noWrap>
+                      {row.note || '-'}
+                    </Typography>
+                  </TableCell>
                 <TableCell>
                   <Chip 
                     label={row.status} 
@@ -243,7 +339,7 @@ const MyAppointments = () => {
                   >
                     Chi tiết
                   </Button>
-                  {row.status === 'Đã đăng ký' && (
+                  {row.status === 'SCHEDULED' && (
                     <Button 
                       size="small" 
                       variant="outlined" 
@@ -262,7 +358,8 @@ const MyAppointments = () => {
                   )}
                 </TableCell>
               </TableRow>
-            ))
+            );
+          })
           ) : (
             <TableRow>
               <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
@@ -366,7 +463,8 @@ const MyAppointments = () => {
               <Box display="flex" alignItems="center" mb={2}>
                 <LocalHospitalIcon color="primary" sx={{ mr: 1 }} />
                 <Typography variant="h6" color="primary">
-                  {selectedAppointment.specialty}
+                {selectedAppointment.medicalSpecialty || selectedAppointment.specialty || 'Không xác định'}
+
                 </Typography>
               </Box>
               
@@ -376,7 +474,8 @@ const MyAppointments = () => {
                     Họ tên
                   </Typography>
                   <Typography variant="body1">
-                    {selectedAppointment.patientName || '--'}
+                  {patientDetail && (patientDetail.fullName || patientDetail.name) ? (patientDetail.fullName || patientDetail.name) : '--'}
+
                   </Typography>
                 </Grid>
                 <Grid item xs={12} md={4}>
@@ -384,7 +483,7 @@ const MyAppointments = () => {
                     Ngày sinh
                   </Typography>
                   <Typography variant="body1">
-                    {selectedAppointment.patientDob ? format(new Date(selectedAppointment.patientDob), 'dd/MM/yyyy') : '--'}
+                    {patientDetail && patientDetail.dob ? format(new Date(patientDetail.dob), 'dd/MM/yyyy') : '--'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} md={4}>
@@ -392,14 +491,9 @@ const MyAppointments = () => {
                     Giới tính
                   </Typography>
                   <Typography variant="body1">
-                    {selectedAppointment.patientGender === 'male' ? 'Nam' : selectedAppointment.patientGender === 'female' ? 'Nữ' : '--'}
+                    {patientDetail && patientDetail.gender ? (patientDetail.gender === 'male' ? 'Nam' : patientDetail.gender === 'female' ? 'Nữ' : patientDetail.gender) : '--'}
                   </Typography>
                 </Grid>
-              </Grid>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
                   <Box mb={2}>
                     <Typography variant="subtitle2" color="textSecondary" gutterBottom>
@@ -407,10 +501,11 @@ const MyAppointments = () => {
                       Thời gian hẹn
                     </Typography>
                     <Typography variant="body1">
-                      {format(parseISO(selectedAppointment.date), 'EEEE, dd/MM/yyyy', { locale: vi })}
+                      {selectedAppointment.appointmentDateTime ? format(parseISO(selectedAppointment.appointmentDateTime), 'EEEE, dd/MM/yyyy', { locale: vi }) : ''}
                     </Typography>
                     <Typography variant="body1">
-                      Giờ khám dự kiến: {selectedAppointment.time.replace(' - ', ' - ')}
+                      Giờ khám dự kiến: {selectedAppointment.appointmentDateTime ? format(parseISO(selectedAppointment.appointmentDateTime), 'HH:mm') : ''}
+                      {selectedAppointment.timeEnd ? ` - ${format(parseISO(selectedAppointment.timeEnd), 'HH:mm')}` : ''}
                     </Typography>
                   </Box>
                   
@@ -429,30 +524,6 @@ const MyAppointments = () => {
                     </Typography>
                   </Box>
                 </Grid>
-                
-                {/* <Grid item xs={12} md={6}>
-                  <Box mb={2}>
-                    <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                      <NotesIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                      Ghi chú
-                    </Typography>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                      {selectedAppointment.note || 'Không có ghi chú'}
-                    </Typography>
-                  </Box>
-                  
-                  {selectedAppointment.symptoms && (
-                    <Box mb={2}>
-                      <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                        <NotesIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                        Triệu chứng
-                      </Typography>
-                      <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                        {selectedAppointment.symptoms}
-                      </Typography>
-                    </Box>
-                  )}
-                </Grid> */}
               </Grid>
             </Box>
           )}

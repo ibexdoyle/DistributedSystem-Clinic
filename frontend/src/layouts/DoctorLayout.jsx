@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import {
   Box,
@@ -132,11 +133,12 @@ const DoctorLayout = () => {
     setNotificationAnchorEl(null);
   };
 
+  const { logout } = useAuth();
   const handleLogout = () => {
-    // Handle logout logic here
-    console.log('Logging out...');
+    logout();
     navigate('/login');
   };
+
 
   const isMenuOpen = Boolean(anchorEl);
   const menuId = 'primary-search-account-menu';
