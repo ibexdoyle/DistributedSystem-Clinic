@@ -14,6 +14,7 @@ public class CreatePrescriptionRequest {
     private String doctorName;
     private String diagnosis;
     private String symptoms;
+    private Double totalPrice;
     private String note;
 
     private List<Item> items;
@@ -26,5 +27,6 @@ public class CreatePrescriptionRequest {
         private String medicineName;
         private String dosage;
         private String instruction;
+        private Double price;
     }
 }

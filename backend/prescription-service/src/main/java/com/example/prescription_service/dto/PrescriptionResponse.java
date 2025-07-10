@@ -17,6 +17,8 @@ public class PrescriptionResponse {
     private String diagnosis;
     private String symptoms;
     private String note;
+    private Double totalPrice;
+
     private LocalDateTime createdAt;
     private List<Item> items;
 
@@ -28,5 +30,6 @@ public class PrescriptionResponse {
         private String medicineName;
         private String dosage;
         private String instruction;
+        private Double price;
     }
 }

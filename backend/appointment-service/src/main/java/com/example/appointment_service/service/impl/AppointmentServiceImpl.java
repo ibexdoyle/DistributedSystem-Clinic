@@ -61,7 +61,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public AppointmentResponse updateStatus(Long id, String statusStr) {
         Appointment appt = appointmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        appt.setStatus(Appointment.Status.valueOf(statusStr.toUpperCase()));
+        appt.setStatus(Appointment.Status.valueOf(statusStr));
         return map(appointmentRepository.save(appt));
     }
 

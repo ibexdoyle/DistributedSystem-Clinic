@@ -30,6 +30,8 @@ public class Prescription {
 
     private String note;
 
+    private Double totalPrice;
+
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "prescription", cascade = CascadeType.ALL)

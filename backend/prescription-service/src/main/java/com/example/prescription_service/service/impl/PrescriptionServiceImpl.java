@@ -40,6 +40,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                 .doctorId(request.getDoctorId())
                 .doctorName(request.getDoctorName())
                 .note(request.getNote())
+                .totalPrice(request.getTotalPrice())
                 .diagnosis(request.getDiagnosis())
                 .symptoms(request.getSymptoms())
                 .createdAt(LocalDateTime.now())
@@ -51,6 +52,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                         .dosage(i.getDosage())
                         .instruction(i.getInstruction())
                         .prescription(prescription)
+                        .price(i.getPrice())
                         .build())
                 .collect(Collectors.toList());
 
@@ -74,6 +76,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                         .medicineName(i.getMedicineName())
                         .dosage(i.getDosage())
                         .instruction(i.getInstruction())
+                        .price(i.getPrice())
                         .build())
                 .collect(Collectors.toList());
 
@@ -86,6 +89,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                 .diagnosis(p.getDiagnosis())
                 .symptoms(p.getSymptoms())
                 .note(p.getNote())
+                .totalPrice(p.getTotalPrice())
                 .items(items)
                 .build();
     }

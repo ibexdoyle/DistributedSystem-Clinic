@@ -6,6 +6,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "prescription_items")
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,6 +22,8 @@ public class PrescriptionItem {
     private String dosage;
 
     private String instruction;
+
+    private Double price;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prescription_id")
