@@ -27,11 +27,11 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     @Override
     public PrescriptionResponse create(CreatePrescriptionRequest request) {
 
-        try {
-            patientClient.getPatientById(request.getPatientId());
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid patient ID: " + request.getPatientId());
-        }
+//        try {
+//            patientClient.getPatientById(request.getPatientId());
+//        } catch (Exception e) {
+//            throw new RuntimeException("Invalid patient ID: " + request.getPatientId());
+//        }
 
 
 
