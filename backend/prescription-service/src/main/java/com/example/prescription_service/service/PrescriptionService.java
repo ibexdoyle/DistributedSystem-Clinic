@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface PrescriptionService {
     PrescriptionResponse create(CreatePrescriptionRequest request);
-    List<PrescriptionResponse> getByPatientId(Long patientId);
+    List<PrescriptionResponse> getByPatientEmail(String patientEmail);
 }

@@ -23,7 +23,7 @@ public class AppointmentController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<AppointmentResponse> updateStatus(@PathVariable Long id, @RequestParam String status) {
+    public ResponseEntity<AppointmentResponse> updateStatus(@PathVariable Long id, @RequestBody String status) {
         return ResponseEntity.ok(service.updateStatus(id, status));
     }
 

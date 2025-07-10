@@ -18,7 +18,7 @@ public class Prescription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long patientId;
+    private String patientEmail;
 
     private Long doctorId;
 

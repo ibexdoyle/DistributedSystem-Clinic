@@ -9,7 +9,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class CreatePrescriptionRequest {
-    private Long patientId;
+    private String patientEmail;
     private Long doctorId;
     private String doctorName;
     private String diagnosis;
