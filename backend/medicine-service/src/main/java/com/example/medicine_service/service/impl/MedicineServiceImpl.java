@@ -20,7 +20,6 @@ public class MedicineServiceImpl implements MedicineService {
     public MedicineResponse create(MedicineRequest request) {
         Medicine medicine = Medicine.builder()
                 .name(request.getName())
-                .code(request.getCode())
                 .description(request.getDescription())
                 .unit(request.getUnit())
                 .stockQuantity(request.getStockQuantity())
@@ -39,7 +38,6 @@ public class MedicineServiceImpl implements MedicineService {
                 .orElseThrow(() -> new RuntimeException("Medicine not found"));
 
         medicine.setName(request.getName());
-        medicine.setCode(request.getCode());
         medicine.setDescription(request.getDescription());
         medicine.setUnit(request.getUnit());
         medicine.setStockQuantity(request.getStockQuantity());
@@ -71,7 +69,6 @@ public class MedicineServiceImpl implements MedicineService {
         return MedicineResponse.builder()
                 .id(medicine.getId())
                 .name(medicine.getName())
-                .code(medicine.getCode())
                 .description(medicine.getDescription())
                 .unit(medicine.getUnit())
                 .stockQuantity(medicine.getStockQuantity())

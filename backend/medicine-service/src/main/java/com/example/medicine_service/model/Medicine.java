@@ -20,9 +20,6 @@ public class Medicine {
     @Column(nullable = false)
     private String name;
 
-    @Column(unique = true)
-    private String code;
-
     private String description;
 
     private String unit;

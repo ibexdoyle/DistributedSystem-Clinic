@@ -8,7 +8,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class MedicineRequest {
     private String name;
-    private String code;
     private String description;
     private String unit;
     private Integer stockQuantity;
