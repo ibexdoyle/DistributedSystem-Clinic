@@ -20,6 +20,7 @@ public class Appointment {
     private Long id;
 
     private Long patientId;
+    private String patientName;
     private Long doctorId;
 
     private String doctorName;

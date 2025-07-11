@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   TextField, Table, TableBody, TableCell, TableContainer,
@@ -12,22 +12,18 @@ import {
   Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-
-// Mock data for medicines
-const mockMedicines = [
-  { id: 1, name: 'Paracetamol', type: 'Giảm đau', unit: 'Viên', price: 500, stock: 1000, description: 'Thuốc giảm đau, hạ sốt' },
-  { id: 2, name: 'Amoxicillin', type: 'Kháng sinh', unit: 'Viên', price: 2000, stock: 500, description: 'Kháng sinh điều trị nhiễm khuẩn' },
-  { id: 3, name: 'Oresol', type: 'Bù nước', unit: 'Gói', price: 3000, stock: 300, description: 'Bù nước và điện giải' },
-  { id: 4, name: 'Panadol', type: 'Giảm đau', unit: 'Viên', price: 800, stock: 800, description: 'Giảm đau, hạ sốt' },
-  { id: 5, name: 'Cephalexin', type: 'Kháng sinh', unit: 'Viên', price: 2500, stock: 400, description: 'Kháng sinh phổ rộng' },
-];
+import {
+  getAllMedicines,
+  createMedicine,
+  updateMedicine,
+  deleteMedicine
+} from '../../services/medicineService';
 
 const medicineTypes = ['Tất cả', 'Giảm đau', 'Kháng sinh', 'Bù nước', 'Khác'];
 
 const Medicines = () => {
-  console.log('Medicines component is rendering');
   const { enqueueSnackbar } = useSnackbar();
-  const [medicines, setMedicines] = useState(mockMedicines);
+  const [medicines, setMedicines] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,33 +37,46 @@ const Medicines = () => {
     unit: '',
     price: '',
     stock: '',
-    description: ''
+    description: '',
+    expiryDate: '',
+    provider: ''
   });
 
-  // Filter medicines based on search term and selected type
+  useEffect(() => {
+    fetchMedicines();
+  }, []);
+
+  const fetchMedicines = async () => {
+    try {
+      const res = await getAllMedicines();
+      setMedicines(res.data);
+    } catch (error) {
+      enqueueSnackbar('Lỗi khi tải dữ liệu thuốc!', { variant: 'error' });
+    }
+  };
+
   const filteredMedicines = medicines.filter(medicine => {
-    const matchesSearch = medicine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         medicine.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === 'Tất cả' || medicine.type === selectedType;
+    const matchesSearch =
+      medicine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (medicine.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType =
+      selectedType === 'Tất cả' || medicine.type === selectedType;
     return matchesSearch && matchesType;
   });
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
+  const handleChangePage = (event, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
 
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
     setPage(0);
   };
 
-  const handleTypeChange = (event) => {
-    setSelectedType(event.target.value);
+  const handleTypeChange = (e) => {
+    setSelectedType(e.target.value);
     setPage(0);
   };
 
@@ -87,7 +96,9 @@ const Medicines = () => {
       unit: '',
       price: '',
       stock: '',
-      description: ''
+      description: '',
+      expiryDate: '',
+      provider: ''
     });
     setIsEditing(false);
     setOpenDialog(true);
@@ -96,12 +107,14 @@ const Medicines = () => {
   const handleOpenEditDialog = (medicine) => {
     setCurrentMedicine(medicine);
     setFormData({
-      name: medicine.name,
-      type: medicine.type,
-      unit: medicine.unit,
-      price: medicine.price,
-      stock: medicine.stock,
-      description: medicine.description
+      name: medicine.name || '',
+      type: medicine.type || '',
+      unit: medicine.unit || '',
+      price: medicine.price || '',
+      stock: medicine.stockQuantity || '',
+      description: medicine.description || '',
+      expiryDate: medicine.expiryDate || '',
+      provider: medicine.provider || ''
     });
     setIsEditing(true);
     setOpenDialog(true);
@@ -112,49 +125,53 @@ const Medicines = () => {
     setCurrentMedicine(null);
   };
 
-  const handleSaveMedicine = () => {
-    if (isEditing) {
-      const updatedMedicines = medicines.map(med => 
-        med.id === currentMedicine.id ? { ...formData, id: currentMedicine.id } : med
-      );
-      setMedicines(updatedMedicines);
-      enqueueSnackbar('Cập nhật thuốc thành công!', { variant: 'success' });
-    } else {
-      const newMedicine = {
-        ...formData,
-        id: Math.max(...medicines.map(m => m.id), 0) + 1
-      };
-      setMedicines([...medicines, newMedicine]);
-      enqueueSnackbar('Thêm thuốc mới thành công!', { variant: 'success' });
+  const handleSaveMedicine = async () => {
+    const payload = {
+      name: formData.name,
+      description: formData.description,
+      unit: formData.unit,
+      stockQuantity: parseInt(formData.stock),
+      expiryDate: formData.expiryDate,
+      price: parseFloat(formData.price),
+      provider: formData.provider
+    };
+
+    try {
+      if (isEditing) {
+        await updateMedicine(currentMedicine.id, payload);
+        enqueueSnackbar('Cập nhật thuốc thành công!', { variant: 'success' });
+      } else {
+        await createMedicine(payload);
+        enqueueSnackbar('Thêm thuốc mới thành công!', { variant: 'success' });
+      }
+      fetchMedicines();
+      setOpenDialog(false);
+    } catch (error) {
+      enqueueSnackbar('Lỗi khi lưu thuốc!', { variant: 'error' });
     }
-    setOpenDialog(false);
   };
 
-  const handleDeleteMedicine = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa thuốc này?')) {
-      const updatedMedicines = medicines.filter(med => med.id !== id);
-      setMedicines(updatedMedicines);
-      enqueueSnackbar('Đã xóa thuốc thành công!', { variant: 'success' });
+      try {
+        await deleteMedicine(id);
+        enqueueSnackbar('Đã xóa thuốc thành công!', { variant: 'success' });
+        fetchMedicines();
+      } catch (error) {
+        enqueueSnackbar('Lỗi khi xóa thuốc!', { variant: 'error' });
+      }
     }
   };
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Quản lý Thuốc
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleOpenAddDialog}
-        >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h4">Quản lý Thuốc</Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddDialog}>
           Thêm thuốc mới
         </Button>
       </Box>
 
-      {/* Search and filter bar */}
       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
         <TextField
           variant="outlined"
@@ -166,66 +183,51 @@ const Medicines = () => {
               <InputAdornment position="start">
                 <SearchIcon />
               </InputAdornment>
-            ),
+            )
           }}
           sx={{ flex: 1 }}
         />
         <FormControl sx={{ minWidth: 200 }}>
           <InputLabel>Loại thuốc</InputLabel>
-          <Select
-            value={selectedType}
-            label="Loại thuốc"
-            onChange={handleTypeChange}
-          >
-            {medicineTypes.map((type) => (
-              <MenuItem key={type} value={type}>
-                {type}
-              </MenuItem>
+          <Select value={selectedType} label="Loại thuốc" onChange={handleTypeChange}>
+            {medicineTypes.map(type => (
+              <MenuItem key={type} value={type}>{type}</MenuItem>
             ))}
           </Select>
         </FormControl>
       </Box>
 
-      {/* Medicines table */}
-      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+      <Paper>
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell>STT</TableCell>
-                <TableCell>Tên thuốc</TableCell>
-                <TableCell>Loại</TableCell>
+                <TableCell>Tên</TableCell>
                 <TableCell>Đơn vị</TableCell>
-                <TableCell>Giá (VNĐ)</TableCell>
+                <TableCell>Giá</TableCell>
                 <TableCell>Tồn kho</TableCell>
-                <TableCell>Mô tả</TableCell>
+                <TableCell>Nhà cung cấp</TableCell>
+                <TableCell>Hạn sử dụng</TableCell>
                 <TableCell>Hành động</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredMedicines
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((medicine, index) => (
-                  <TableRow key={medicine.id} hover>
-                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell>{medicine.name}</TableCell>
-                    <TableCell>{medicine.type}</TableCell>
-                    <TableCell>{medicine.unit}</TableCell>
-                    <TableCell>{medicine.price.toLocaleString()}</TableCell>
-                    <TableCell>{medicine.stock}</TableCell>
-                    <TableCell sx={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {medicine.description}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton onClick={() => handleOpenEditDialog(medicine)} color="primary">
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton onClick={() => handleDeleteMedicine(medicine.id)} color="error">
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {filteredMedicines.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((medicine, index) => (
+                <TableRow key={medicine.id}>
+                  <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                  <TableCell>{medicine.name}</TableCell>
+                  <TableCell>{medicine.unit}</TableCell>
+                  <TableCell>{medicine.price?.toLocaleString()}</TableCell>
+                  <TableCell>{medicine.stockQuantity}</TableCell>
+                  <TableCell>{medicine.provider}</TableCell>
+                  <TableCell>{medicine.expiryDate}</TableCell>
+                  <TableCell>
+                    <IconButton onClick={() => handleOpenEditDialog(medicine)}><EditIcon /></IconButton>
+                    <IconButton onClick={() => handleDelete(medicine.id)} color="error"><DeleteIcon /></IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
@@ -237,84 +239,30 @@ const Medicines = () => {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Số dòng mỗi trang:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} trong số ${count}`}
         />
       </Paper>
 
-      {/* Add/Edit Medicine Dialog */}
+      {/* Form Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{isEditing ? 'Chỉnh sửa thông tin thuốc' : 'Thêm thuốc mới'}</DialogTitle>
+        <DialogTitle>{isEditing ? 'Chỉnh sửa thuốc' : 'Thêm thuốc mới'}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-            <TextField
-              name="name"
-              label="Tên thuốc"
-              value={formData.name}
-              onChange={handleInputChange}
-              fullWidth
-              required
-            />
-            <FormControl fullWidth required>
-              <InputLabel>Loại thuốc</InputLabel>
-              <Select
-                name="type"
-                value={formData.type}
-                label="Loại thuốc"
-                onChange={handleInputChange}
-              >
-                {medicineTypes.filter(type => type !== 'Tất cả').map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {type}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                name="unit"
-                label="Đơn vị tính"
-                value={formData.unit}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-              <TextField
-                name="price"
-                label="Giá (VNĐ)"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-              <TextField
-                name="stock"
-                label="Số lượng tồn"
-                type="number"
-                value={formData.stock}
-                onChange={handleInputChange}
-                fullWidth
-                required
-              />
-            </Box>
-            <TextField
-              name="description"
-              label="Mô tả"
-              value={formData.description}
-              onChange={handleInputChange}
-              multiline
-              rows={3}
-              fullWidth
-            />
+            <TextField label="Tên thuốc" name="name" value={formData.name} onChange={handleInputChange} required fullWidth />
+            <TextField label="Loại" name="type" value={formData.type} onChange={handleInputChange} fullWidth />
+            <TextField label="Đơn vị" name="unit" value={formData.unit} onChange={handleInputChange} fullWidth />
+            <TextField label="Giá (VNĐ)" name="price" type="number" value={formData.price} onChange={handleInputChange} fullWidth />
+            <TextField label="Tồn kho" name="stock" type="number" value={formData.stock} onChange={handleInputChange} fullWidth />
+            <TextField label="Nhà cung cấp" name="provider" value={formData.provider} onChange={handleInputChange} fullWidth />
+            <TextField label="Hạn sử dụng" name="expiryDate" type="date" value={formData.expiryDate} onChange={handleInputChange} InputLabelProps={{ shrink: true }} fullWidth />
+            <TextField label="Mô tả" name="description" value={formData.description} onChange={handleInputChange} multiline rows={3} fullWidth />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Hủy</Button>
-          <Button 
-            onClick={handleSaveMedicine} 
+          <Button
+            onClick={handleSaveMedicine}
+            disabled={!formData.name || !formData.unit || !formData.price || formData.stock === ''}
             variant="contained"
-            disabled={!formData.name || !formData.type || !formData.unit || !formData.price || formData.stock === ''}
           >
             Lưu
           </Button>

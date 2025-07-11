@@ -25,4 +25,6 @@ public class PrescriptionController {
     public ResponseEntity<List<PrescriptionResponse>> getByPatient(@PathVariable Long patientId) {
         return ResponseEntity.ok(prescriptionService.getByPatientId(patientId));
     }
+
+
 }

@@ -29,6 +29,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public AppointmentResponse create(AppointmentRequest req) {
         Appointment appointment = Appointment.builder()
                 .patientId(req.getPatientId())
+                .patientName(req.getPatientName())
                 .doctorId(req.getDoctorId())
                 .appointmentDateTime(
                         LocalDateTime.of(
@@ -91,6 +92,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         return AppointmentResponse.builder()
                 .id(a.getId())
                 .patientId(a.getPatientId())
+                .patientName(a.getPatientName())
                 .doctorId(a.getDoctorId())
                 .doctorName(a.getDoctorName())
                 .medicalSpecialty(a.getMedicalSpecialty())

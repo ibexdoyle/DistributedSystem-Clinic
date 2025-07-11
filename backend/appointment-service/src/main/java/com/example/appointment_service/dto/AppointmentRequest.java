@@ -12,6 +12,7 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class AppointmentRequest {
     private Long patientId;
+    private String patientName;
     private Long doctorId;
     private String doctorName;
     private String medicalSpecialty;
