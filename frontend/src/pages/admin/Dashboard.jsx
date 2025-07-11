@@ -112,7 +112,7 @@ const Dashboard = () => {
     // Dữ liệu thống kê
     const stats = [{
             title: "Tổng bệnh nhân",
-            value: "2,420",
+            value: "15",
             change: 12.5,
             isIncrease: true,
             icon: PersonIcon,
@@ -120,7 +120,7 @@ const Dashboard = () => {
         },
         {
             title: "Bác sĩ",
-            value: "156",
+            value: "6",
             change: 5.2,
             isIncrease: true,
             icon: LocalHospitalIcon,
@@ -128,7 +128,7 @@ const Dashboard = () => {
         },
         {
             title: "Lịch hẹn",
-            value: "1,234",
+            value: "8",
             change: -2.1,
             isIncrease: false,
             icon: EventAvailableIcon,

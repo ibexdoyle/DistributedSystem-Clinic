@@ -1,39 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Container,
-  Typography,
-  Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  TextareaAutosize,
-  Divider,
-  Grid,
-  Avatar
+  Container, Typography, Box, Paper, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Button, TextField, InputAdornment, IconButton, Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, FormControl,
+  InputLabel, Select, Grid, Avatar
 } from '@mui/material';
-import { 
-  Search, 
-  Visibility,
-  LocalPharmacy,
-  Print as PrintIcon,
+import {
+  Search, Visibility, LocalPharmacy, Print as PrintIcon,
   CheckCircleOutline as CheckCircleOutlineIcon,
   CancelOutlined as CancelOutlinedIcon,
   PendingOutlined as PendingOutlinedIcon
@@ -43,115 +16,122 @@ import { vi } from 'date-fns/locale';
 import { useSnackbar } from 'notistack';
 
 const AdminPrescriptionsPage = () => {
-  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  
-  // Mock data - in a real app, this would come from an API
-  const [prescriptions, setPrescriptions] = useState([
-    {
-      id: 1,
-      patientId: 'P001',
-      patientName: 'Nguyễn Văn A',
-      email: 'nguyenvana@example.com',
-      date: '2025-06-10T10:30:00',
-      status: 'pending',
-      diagnosis: 'Viêm họng cấp',
-      note: 'Uống thuốc đúng giờ, tái khám sau 1 tuần nếu không đỡ',
-      doctorName: 'BS. Trần Văn B',
-      medicines: [
-        { id: 1, name: 'Paracetamol', dosage: '500mg', frequency: '2 lần/ngày', duration: '5 ngày' },
-        { id: 2, name: 'Amoxicillin', dosage: '500mg', frequency: '3 lần/ngày', duration: '7 ngày' }
-      ]
-    },
-    {
-      id: 2,
-      patientId: 'P002',
-      patientName: 'Trần Thị B',
-      email: 'tranthib@example.com',
-      date: '2025-06-09T14:15:00',
-      status: 'completed',
-      diagnosis: 'Cảm cúm',
-      note: 'Nghỉ ngơi nhiều, uống đủ nước',
-      doctorName: 'BS. Lê Thị C',
-      medicines: [
-        { id: 3, name: 'Tiffy', dosage: '1 viên', frequency: '3 lần/ngày', duration: '3 ngày' }
-      ]
-    }
-  ]);
 
+  const [prescriptions, setPrescriptions] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('');
 
-  // Status options
   const statusOptions = [
     { value: 'pending', label: 'Chưa lấy', color: 'warning', icon: <PendingOutlinedIcon /> },
     { value: 'completed', label: 'Đã lấy', color: 'success', icon: <CheckCircleOutlineIcon /> }
   ];
 
-  // Filter prescriptions based on search and status
-  const filteredPrescriptions = prescriptions.filter(pres => {
-    const matchesSearch = 
-      pres.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pres.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pres.doctorName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || pres.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Fetch prescriptions from backend
+  useEffect(() => {
+    const fetchPrescriptions = async () => {
+      try {
+        const res = await fetch('http://localhost:8085/api/prescriptions');
+        if (!res.ok) throw new Error('Prescription API error');
+        const data = await res.json();
 
-  // Handle status update
-  const handleStatusUpdate = async (prescriptionId, newStatus) => {
+        const patientIds = [...new Set(data.map(p => p.patientId))];
+        const patientMap = {};
+
+        const patientFetches = await Promise.all(
+          patientIds.map(id =>
+            fetch(`http://localhost:8082/api/patients/${id}`)
+              .then(res => res.ok ? res.json() : null)
+              .catch(() => null)
+          )
+        );
+
+        patientIds.forEach((id, index) => {
+          const info = patientFetches[index];
+          patientMap[id] = info?.fullName || `BN${id}`;
+        });
+
+        const mapped = data.map(p => ({
+          id: p.id,
+          patientId: p.patientId,
+          patientName: patientMap[p.patientId],
+          date: p.createdAt,
+          status: 'pending', // default, update if your backend supports it
+          diagnosis: p.diagnosis,
+          note: p.note,
+          doctorName: p.doctorName,
+          medicines: p.items.map(i => ({
+            name: i.medicineName,
+            dosage: i.dosage,
+            note: i.note || ''
+          }))
+        }));
+
+        setPrescriptions(mapped);
+      } catch (error) {
+        console.error('Fetch error:', error);
+        enqueueSnackbar('Lỗi khi tải dữ liệu đơn thuốc', { variant: 'error' });
+      }
+    };
+
+    fetchPrescriptions();
+  }, []);
+
+  const handleStatusUpdate = async (id, newStatus) => {
     try {
-      // In a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setPrescriptions(prescriptions.map(pres => 
-        pres.id === prescriptionId 
-          ? { ...pres, status: newStatus }
-          : pres
-      ));
-      
-      enqueueSnackbar(`Đã cập nhật trạng thái đơn thuốc thành "${newStatus === 'completed' ? 'Đã lấy' : 'Chưa lấy'}"`, { variant: 'success' });
-    } catch (error) {
-      console.error('Error updating prescription status:', error);
-      enqueueSnackbar('Có lỗi xảy ra khi cập nhật trạng thái', { variant: 'error' });
+      // Fake API call
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setPrescriptions(prev =>
+        prev.map(p => (p.id === id ? { ...p, status: newStatus } : p))
+      );
+      enqueueSnackbar('Cập nhật trạng thái thành công', { variant: 'success' });
+    } catch {
+      enqueueSnackbar('Lỗi khi cập nhật trạng thái', { variant: 'error' });
     }
   };
 
-  // Handle view prescription details
   const handleViewDetails = (prescription) => {
     setSelectedPrescription(prescription);
     setOpenDialog(true);
   };
 
-  // Handle close dialog
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedPrescription(null);
   };
 
-  // Get status display
   const getStatusDisplay = (status) => {
-    const statusObj = statusOptions.find(opt => opt.value === status);
-    return statusObj || { label: 'Không xác định', color: 'default' };
+    return statusOptions.find(opt => opt.value === status) || {
+      label: 'Không xác định',
+      color: 'default'
+    };
   };
+
+  const filteredPrescriptions = prescriptions.filter(p => {
+    const keyword = searchTerm.toLowerCase();
+    const matchesSearch =
+      p.patientName.toLowerCase().includes(keyword) ||
+      p.diagnosis?.toLowerCase().includes(keyword) ||
+      p.doctorName.toLowerCase().includes(keyword);
+
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, alignItems: 'center' }}>
-        <Typography variant="h5" component="h1">
+      <Box display="flex" justifyContent="space-between" mb={3}>
+        <Typography variant="h5">
           <LocalPharmacy sx={{ verticalAlign: 'middle', mr: 1 }} />
           Quản lý đơn thuốc
         </Typography>
       </Box>
 
-      {/* Filter and search */}
-      <Paper sx={{ mb: 3, p: 2 }}>
-        <Grid container spacing={2} alignItems="center">
+      {/* Filters */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
@@ -179,9 +159,9 @@ const AdminPrescriptionsPage = () => {
                 <MenuItem value="all">Tất cả</MenuItem>
                 {statusOptions.map((status) => (
                   <MenuItem key={status.value} value={status.value}>
-                    <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box display="flex" alignItems="center">
                       {status.icon}
-                      <Box component="span" sx={{ ml: 1 }}>{status.label}</Box>
+                      <Box ml={1}>{status.label}</Box>
                     </Box>
                   </MenuItem>
                 ))}
@@ -191,7 +171,7 @@ const AdminPrescriptionsPage = () => {
         </Grid>
       </Paper>
 
-      {/* Prescriptions table */}
+      {/* Table */}
       <Paper>
         <TableContainer>
           <Table>
@@ -199,8 +179,8 @@ const AdminPrescriptionsPage = () => {
               <TableRow>
                 <TableCell>Mã đơn</TableCell>
                 <TableCell>Bệnh nhân</TableCell>
-                <TableCell>Bác sĩ kê đơn</TableCell>
-                <TableCell>Ngày tạo</TableCell>
+                <TableCell>Bác sĩ</TableCell>
+                <TableCell>Ngày kê</TableCell>
                 <TableCell>Chẩn đoán</TableCell>
                 <TableCell>Thuốc</TableCell>
                 <TableCell>Trạng thái</TableCell>
@@ -209,81 +189,45 @@ const AdminPrescriptionsPage = () => {
             </TableHead>
             <TableBody>
               {filteredPrescriptions.length > 0 ? (
-                filteredPrescriptions.map((pres) => {
-                  const status = getStatusDisplay(pres.status);
+                filteredPrescriptions.map(p => {
+                  const status = getStatusDisplay(p.status);
                   return (
-                    <TableRow key={pres.id} hover>
-                      <TableCell>#{pres.id}</TableCell>
+                    <TableRow key={p.id}>
+                      <TableCell>#{p.id}</TableCell>
                       <TableCell>
                         <Box display="flex" alignItems="center">
-                          <Avatar sx={{ width: 32, height: 32, mr: 1, bgcolor: 'primary.main' }}>
-                            {pres.patientName.charAt(0)}
-                          </Avatar>
-                          {pres.patientName}
+                          <Avatar sx={{ mr: 1 }}>{p.patientName?.charAt(0)}</Avatar>
+                          {p.patientName}
                         </Box>
                       </TableCell>
-                      <TableCell>{pres.doctorName}</TableCell>
+                      <TableCell>{p.doctorName}</TableCell>
+                      <TableCell>{format(new Date(p.date), 'dd/MM/yyyy HH:mm', { locale: vi })}</TableCell>
+                      <TableCell>{p.diagnosis}</TableCell>
+                      <TableCell>{p.medicines.length} loại</TableCell>
                       <TableCell>
-                        {format(new Date(pres.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                      </TableCell>
-                      <TableCell>{pres.diagnosis || '--'}</TableCell>
-                      <TableCell>{pres.medicines.length} loại</TableCell>
-                      <TableCell>
-                        <Chip 
+                        <Chip
                           icon={status.icon}
                           label={status.label}
                           color={status.color}
-                          size="small"
                           variant="outlined"
+                          size="small"
                         />
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" gap={1} alignItems="center">
-                          <IconButton 
-                            size="small" 
-                            color="primary"
-                            onClick={() => handleViewDetails(pres)}
-                            title="Xem chi tiết"
-                            sx={{ mr: 1 }}
-                          >
-                            <Visibility fontSize="small" />
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <IconButton size="small" color="primary" onClick={() => handleViewDetails(p)}>
+                            <Visibility />
                           </IconButton>
-                          
-                          {/* Chỉ hiển thị nút "Đã lấy" nếu trạng thái là "Chưa lấy" */}
-                          {pres.status === 'pending' && (
+                          {p.status === 'pending' && (
                             <Button
                               size="small"
                               variant="outlined"
                               color="success"
                               startIcon={<CheckCircleOutlineIcon />}
-                              onClick={(e) => {
-                                // Vô hiệu hóa nút ngay lập tức khi nhấn
-                                e.currentTarget.disabled = true;
-                                e.currentTarget.style.opacity = '0.7';
-                                handleStatusUpdate(pres.id, 'completed');
-                              }}
-                              sx={{
-                                minWidth: 100,
-                                '&.Mui-disabled': {
-                                  opacity: 0.7,
-                                  color: 'success.main',
-                                  borderColor: 'success.main'
-                                }
-                              }}
+                              onClick={() => handleStatusUpdate(p.id, 'completed')}
                             >
                               Đã lấy
                             </Button>
-                          )}
-                          
-                          {/* Hiển thị trạng thái nếu đã lấy */}
-                          {pres.status === 'completed' && (
-                            <Chip 
-                              icon={<CheckCircleOutlineIcon />}
-                              label="Đã lấy"
-                              color="success"
-                              size="small"
-                              variant="outlined"
-                            />
                           )}
                         </Box>
                       </TableCell>
@@ -292,10 +236,8 @@ const AdminPrescriptionsPage = () => {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">
-                      Không tìm thấy đơn thuốc nào
-                    </Typography>
+                  <TableCell colSpan={8} align="center">
+                    Không có đơn thuốc nào
                   </TableCell>
                 </TableRow>
               )}
@@ -304,63 +246,44 @@ const AdminPrescriptionsPage = () => {
         </TableContainer>
       </Paper>
 
-      {/* Prescription Details Dialog */}
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        maxWidth="md"
-        fullWidth
-      >
+      {/* Dialog */}
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           Chi tiết đơn thuốc #{selectedPrescription?.id}
           <IconButton
-            aria-label="close"
             onClick={handleCloseDialog}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              color: (theme) => theme.palette.grey[500],
-            }}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
           >
             <CancelOutlinedIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
           {selectedPrescription && (
-            <Box>
+            <>
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Thông tin bệnh nhân
-                  </Typography>
-                  <Box sx={{ pl: 2, mb: 3 }}>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2">Thông tin bệnh nhân</Typography>
+                  <Box pl={2}>
                     <Typography><strong>Họ tên:</strong> {selectedPrescription.patientName}</Typography>
                     <Typography><strong>Mã BN:</strong> {selectedPrescription.patientId}</Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Thông tin bác sĩ
-                  </Typography>
-                  <Box sx={{ pl: 2, mb: 3 }}>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2">Thông tin bác sĩ</Typography>
+                  <Box pl={2}>
                     <Typography><strong>Bác sĩ:</strong> {selectedPrescription.doctorName}</Typography>
-                    <Typography><strong>Ngày kê đơn:</strong> {format(new Date(selectedPrescription.date), 'dd/MM/yyyy HH:mm', { locale: vi })}</Typography>
+                    <Typography><strong>Ngày kê:</strong> {format(new Date(selectedPrescription.date), 'dd/MM/yyyy HH:mm', { locale: vi })}</Typography>
                   </Box>
                 </Grid>
               </Grid>
 
-              <Typography variant="subtitle2" gutterBottom>
-                Chẩn đoán
-              </Typography>
-              <Box sx={{ pl: 2, mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                <Typography>{selectedPrescription.diagnosis}</Typography>
+              <Typography mt={3} variant="subtitle2">Chẩn đoán</Typography>
+              <Box bgcolor="grey.100" p={2} borderRadius={1} mb={2}>
+                {selectedPrescription.diagnosis}
               </Box>
 
-              <Typography variant="subtitle2" gutterBottom>
-                Đơn thuốc
-              </Typography>
-              <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+              <Typography variant="subtitle2">Đơn thuốc</Typography>
+              <TableContainer component={Paper} variant="outlined" sx={{ mt: 1 }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -378,8 +301,6 @@ const AdminPrescriptionsPage = () => {
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{med.name}</TableCell>
                         <TableCell>{med.dosage}</TableCell>
-                        <TableCell>{med.frequency}</TableCell>
-                        <TableCell>{med.duration}</TableCell>
                         <TableCell>{med.note || '--'}</TableCell>
                       </TableRow>
                     ))}
@@ -389,24 +310,17 @@ const AdminPrescriptionsPage = () => {
 
               {selectedPrescription.note && (
                 <>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Ghi chú
-                  </Typography>
-                  <Box sx={{ pl: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1, whiteSpace: 'pre-line' }}>
-                    {selectedPrescription.note}
-                  </Box>
+                  <Typography mt={3} variant="subtitle2">Ghi chú</Typography>
+                  <Box bgcolor="grey.100" p={2} borderRadius={1}>{selectedPrescription.note}</Box>
                 </>
               )}
-            </Box>
+            </>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} variant="outlined">
-            Đóng
-          </Button>
-          <Button 
-            variant="contained" 
-            color="primary"
+          <Button onClick={handleCloseDialog}>Đóng</Button>
+          <Button
+            variant="contained"
             startIcon={<PrintIcon />}
             onClick={() => window.print()}
           >

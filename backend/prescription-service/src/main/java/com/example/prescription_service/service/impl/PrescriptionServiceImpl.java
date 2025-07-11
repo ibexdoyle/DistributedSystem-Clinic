@@ -70,6 +70,16 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<PrescriptionResponse> getAllPrescriptions() {
+        List<Prescription> prescriptions = prescriptionRepository.findAll();
+        return prescriptions.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+
+
     private PrescriptionResponse mapToResponse(Prescription p) {
         List<PrescriptionResponse.Item> items = p.getItems().stream()
                 .map(i -> PrescriptionResponse.Item.builder()

@@ -26,5 +26,11 @@ public class PrescriptionController {
         return ResponseEntity.ok(prescriptionService.getByPatientId(patientId));
     }
 
+    @GetMapping
+    public ResponseEntity<List<PrescriptionResponse>> getAll() {
+        return ResponseEntity.ok(prescriptionService.getAllPrescriptions());
+    }
+
+
 
 }
