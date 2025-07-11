@@ -364,6 +364,7 @@ const Appointments = () => {
                 },
                 body: JSON.stringify({
                     patientId,
+                    patientName: form.name,
                     doctorId: form.doctor,
                     doctorName: doctors.find(d => d.id === form.doctor)?.name || '',
                     medicalSpecialty: departments.find(d => d.id === form.department)?.name || '',
