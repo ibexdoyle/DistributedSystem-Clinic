@@ -2,7 +2,7 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8082';
-const PATIENT_SERVICE_URL = 'http://localhost:8083'; // Thêm URL cho patient service
+const PATIENT_SERVICE_URL = 'http://localhost:8083'; 
 
 // Create axios instance with default config
 const api = axios.create({

@@ -68,23 +68,20 @@ const Sidebar = ({ open, onClose }) => {
         },
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '16px',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
-        }}
-      >
-        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-          Menu
-        </Typography>
-        <IconButton onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-      </Box>
-      
+      {/* Doctor Info Header in Sidebar */}
+      {user && user.role === 'doctor' && (
+        <Box textAlign="center" mt={3} mb={2}>
+          <Avatar sx={{ bgcolor: "#1976d2", width: 72, height: 72, fontSize: 32, margin: "0 auto" }}>
+            {user.fullName ? user.fullName.split(" ").map(w => w[0]).join("").toUpperCase() : "BS"}
+          </Avatar>
+          <Typography variant="h6" mt={1}>
+            Bác sĩ {user.fullName || ''}
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            Chuyên khoa {user.department || ''}
+          </Typography>
+        </Box>
+      )}
       <Box sx={{ overflow: 'auto' }}>
         <List>
           {getMenuItems().map((item, index) => (

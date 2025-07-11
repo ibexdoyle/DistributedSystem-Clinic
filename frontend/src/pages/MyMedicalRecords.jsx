@@ -14,8 +14,10 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  IconButton
 } from '@mui/material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../contexts/AuthContext';
 
 const MyMedicalRecords = () => {
@@ -46,11 +48,29 @@ const MyMedicalRecords = () => {
   useEffect(() => {
     const fetchMedicalRecords = async () => {
       try {
-        const res = await fetch(`http://localhost:8084/api/medical-records?patientId=${patientInfo?.id}`);
+        const res = await fetch(`http://localhost:8085/api/prescriptions/patient/${patientInfo?.id}`);
         const data = await res.json();
-        setMedicalRecords(Array.isArray(data) ? data : []);
+
+        if (!Array.isArray(data)) throw new Error('Expected array');
+
+        const mapped = data.map((record) => ({
+          id: record.id,
+          date: formatDate(record.createdAt),
+          doctor: record.doctorName,
+          diagnosis: record.diagnosis,
+          note: record.note,
+          medicines: record.items?.map(item => ({
+            name: item.medicineName,
+            quantity: item.dosage,
+            usage: item.instruction
+          })),
+          prescription: record.note
+        }));
+
+        setMedicalRecords(mapped);
       } catch (err) {
         console.error('Failed to fetch medical records', err);
+        setMedicalRecords([]);
       }
     };
 
@@ -68,6 +88,7 @@ const MyMedicalRecords = () => {
     setPrescriptionDialogOpen(false);
     setSelectedPrescription(null);
   };
+
   const formatDate = (dateString) => {
     if (!dateString) return '---';
     const date = new Date(dateString);
@@ -76,13 +97,13 @@ const MyMedicalRecords = () => {
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   };
-  
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
         Hồ sơ bệnh án
       </Typography>
-      
+
       <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 'medium', mb: 1.5 }}>
           Thông tin bệnh nhân
@@ -99,7 +120,7 @@ const MyMedicalRecords = () => {
           <Box sx={{ minWidth: '120px', mb: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ lineHeight: 1.2, mb: 0.5 }}>Ngày sinh</Typography>
             <Typography sx={{ whiteSpace: 'nowrap' }}>{formatDate(patientInfo?.dob)}</Typography>
-            </Box>
+          </Box>
           <Box sx={{ minWidth: '80px', mb: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ lineHeight: 1.2, mb: 0.5 }}>Giới tính</Typography>
             <Typography sx={{ whiteSpace: 'nowrap' }}>{patientInfo?.gender === 'male' ? 'Nam' : patientInfo?.gender === 'female' ? 'Nữ' : 'Khác'}</Typography>
@@ -114,7 +135,7 @@ const MyMedicalRecords = () => {
       <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 'medium', mb: 2 }}>
         Lịch sử khám bệnh
       </Typography>
-      
+
       <TableContainer component={Paper} elevation={3}>
         <Table sx={{ minWidth: 650 }} aria-label="medical records table">
           <TableHead>
@@ -133,13 +154,9 @@ const MyMedicalRecords = () => {
                 <TableCell>{record.doctor}</TableCell>
                 <TableCell>{record.diagnosis}</TableCell>
                 <TableCell>
-                  <Button 
-                    variant="outlined" 
-                    size="small"
-                    onClick={() => handleOpenPrescriptionDialog(record)}
-                  >
-                    Xem đơn thuốc
-                  </Button>
+                  <IconButton onClick={() => handleOpenPrescriptionDialog(record)}>
+                    <VisibilityIcon />
+                  </IconButton>
                 </TableCell>
                 <TableCell>{record.note}</TableCell>
               </TableRow>
@@ -163,7 +180,6 @@ const MyMedicalRecords = () => {
                 <Typography variant="h6" gutterBottom sx={{ textAlign: 'center', mb: 3, fontWeight: 'bold' }}>
                   ĐƠN THUỐC
                 </Typography>
-                
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="body1">
                     <strong>Ngày khám:</strong> {selectedPrescription.date}
@@ -175,17 +191,14 @@ const MyMedicalRecords = () => {
                     <strong>Chuẩn đoán:</strong> {selectedPrescription.diagnosis}
                   </Typography>
                 </Box>
-
                 <Box sx={{ borderTop: '1px solid #e0e0e0', my: 2 }}></Box>
-                
                 <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
                   Đơn thuốc:
                 </Typography>
-                
-                {selectedPrescription.medicines && selectedPrescription.medicines.length > 0 ? (
+                {selectedPrescription.medicines?.length > 0 ? (
                   <Box sx={{ mb: 3 }}>
                     {selectedPrescription.medicines.map((medicine, index) => (
-                      <Box key={medicine.id || index} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
+                      <Box key={index} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
                           {medicine.name} - {medicine.quantity}
                         </Typography>
@@ -200,7 +213,6 @@ const MyMedicalRecords = () => {
                     Không có thông tin thuốc
                   </Typography>
                 )}
-
                 <Box sx={{ mt: 2, p: 2, bgcolor: '#f0f7ff', borderRadius: 1 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
                     Lời dặn của bác sĩ:
